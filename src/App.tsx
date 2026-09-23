@@ -7,11 +7,11 @@ import {
   X,
   Plus,
   CheckCircle2,
-  Wifi,
-  UserCheck
+  ExternalLink,
+  UserCheck,
+  Lock,
+  Heart
 } from 'lucide-react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from './firebase';
 import { 
   Article, 
   SchoolEvent, 
@@ -51,19 +51,20 @@ import { LeadArticleHero } from './components/LeadArticleHero';
 import { ArticleCard } from './components/ArticleCard';
 import { EventsSection } from './components/EventsSection';
 import { PhotoGallerySection } from './components/PhotoGallerySection';
+import { InstitutionalBanner } from './components/InstitutionalBanner';
 import { TeacherAuthModal } from './components/TeacherAuthModal';
 import { TeacherPortalModal } from './components/TeacherPortalModal';
 import { StudentSubmitModal } from './components/StudentSubmitModal';
 import { ArticleReaderModal } from './components/ArticleReaderModal';
 
 export default function App() {
-  // Dados em tempo real vindos do Firebase
+  // Dados sincronizados na nuvem
   const [articles, setArticles] = useState<Article[]>([]);
   const [events, setEvents] = useState<SchoolEvent[]>([]);
   const [photos, setPhotos] = useState<PhotoSubmission[]>([]);
   const [comments, setComments] = useState<ArticleComment[]>([]);
   
-  // Estado do professor
+  // Estado de autenticação do educador (via senha)
   const [teacherAuth, setTeacherAuth] = useState<TeacherAuth>({
     isAuthenticated: false,
     teacherName: '',
@@ -84,6 +85,7 @@ export default function App() {
 
   // Modais
   const [isTeacherAuthOpen, setIsTeacherAuthOpen] = useState<boolean>(false);
+  const [teacherAuthCustomMessage, setTeacherAuthCustomMessage] = useState<string>('');
   const [isTeacherPortalOpen, setIsTeacherPortalOpen] = useState<boolean>(false);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
   const [submitDefaultTab, setSubmitDefaultTab] = useState<'article' | 'photo' | 'event'>('article');
@@ -94,24 +96,11 @@ export default function App() {
     setTimeout(() => setToastMessage(''), 3500);
   };
 
-  // 1. Sincronização em tempo real com o Firebase
+  // Inscrição em tempo real com a nuvem
   useEffect(() => {
     setTeacherAuth(getTeacherAuthSession());
     setLikedArticles(getLikedArticles());
     setJoinedEvents(getJoinedEvents());
-
-    // Reconhece login Google automaticamente
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        const docAuth: TeacherAuth = {
-          isAuthenticated: true,
-          teacherName: user.displayName || 'Professor(a) Herdar',
-          role: 'Professor(a)',
-        };
-        setTeacherAuth(docAuth);
-        setTeacherAuthSession(docAuth);
-      }
-    });
 
     const unsubArticles = subscribeToArticles((items) => {
       setArticles(items);
@@ -130,7 +119,6 @@ export default function App() {
     });
 
     return () => {
-      unsubscribeAuth();
       unsubArticles();
       unsubEvents();
       unsubPhotos();
@@ -150,8 +138,14 @@ export default function App() {
     setPhotos(newPhotos);
   };
 
-  // Excluir notícia (apaga na nuvem para todos)
+  // REGRA: Apenas educador autenticado com senha pode excluir notícias
   const handleDeleteArticle = async (id: string) => {
+    if (!teacherAuth.isAuthenticated) {
+      setTeacherAuthCustomMessage('Apenas educadores com senha podem excluir notícias. Digite sua senha:');
+      setIsTeacherAuthOpen(true);
+      return;
+    }
+
     const target = articles.find(a => a.id === id);
     setArticles(prev => prev.filter(a => a.id !== id));
     if (activeArticle?.id === id) {
@@ -161,15 +155,27 @@ export default function App() {
     showToast(`Notícia "${target?.title.slice(0, 25) || ''}..." apagada com sucesso.`);
   };
 
-  // Excluir evento
+  // REGRA: Apenas educador autenticado com senha pode excluir eventos
   const handleDeleteEvent = async (id: string) => {
+    if (!teacherAuth.isAuthenticated) {
+      setTeacherAuthCustomMessage('Apenas educadores com senha podem excluir eventos. Digite sua senha:');
+      setIsTeacherAuthOpen(true);
+      return;
+    }
+
     setEvents(prev => prev.filter(e => e.id !== id));
     await deleteEventFromCloud(id);
     showToast('Evento apagado do calendário.');
   };
 
-  // Excluir foto
+  // REGRA: Apenas educador autenticado com senha pode excluir fotos
   const handleDeletePhoto = async (id: string) => {
+    if (!teacherAuth.isAuthenticated) {
+      setTeacherAuthCustomMessage('Apenas educadores com senha podem excluir fotos. Digite sua senha:');
+      setIsTeacherAuthOpen(true);
+      return;
+    }
+
     setPhotos(prev => prev.filter(p => p.id !== id));
     await deletePhotoFromCloud(id);
     showToast('Foto apagada do mural.');
@@ -182,20 +188,19 @@ export default function App() {
     showToast('Comentário enviado!');
   };
 
-  // Login de professor sem senha
+  // Login de educador com senha
   const handleTeacherLoginSuccess = (authData: TeacherAuth) => {
     setTeacherAuth(authData);
     setTeacherAuthSession(authData);
-    showToast(`Conectado como ${authData.teacherName}`);
+    showToast(`Bem-vindo(a), ${authData.teacherName}! Modo Educador ativado.`);
   };
 
-  // Sair do modo professor
-  const handleTeacherLogout = async () => {
-    await signOut(auth).catch(() => {});
+  // Sair do modo educador
+  const handleTeacherLogout = () => {
     const emptyAuth: TeacherAuth = { isAuthenticated: false, teacherName: '', role: '' };
     setTeacherAuth(emptyAuth);
     clearTeacherAuthSession();
-    showToast('Você saiu do modo professor.');
+    showToast('Você saiu do modo educador.');
   };
 
   // Curtir notícia
@@ -238,7 +243,7 @@ export default function App() {
     setArticles(prev => [article, ...prev]);
     await saveArticleToCloud(article);
     setActiveArticle(article);
-    showToast('Notícia publicada para toda a escola!');
+    showToast('Notícia publicada para toda a comunidade!');
   };
 
   // Adicionar foto na nuvem
@@ -268,7 +273,7 @@ export default function App() {
     showToast('Destaque da capa atualizado.');
   };
 
-  // Filtragem simples de notícias (sem vida escolar, sem esporte, sem opiniao/cronicas)
+  // Filtragem de notícias
   const visibleArticles = useMemo(() => {
     let list = articles;
 
@@ -302,7 +307,7 @@ export default function App() {
     return visibleArticles.filter(a => a.id !== leadArticle.id);
   }, [visibleArticles, leadArticle]);
 
-  // Categorias limpas e sem palavras difíceis
+  // Categorias limpas
   const categories: string[] = [
     'Todas',
     'Notícias da Escola',
@@ -312,14 +317,14 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#1C1917] flex flex-col selection:bg-[#E5D7C3]">
+    <div className="min-h-screen bg-[#FAF7F2] dark:bg-[#12110F] text-[#1C1917] dark:text-[#E7E5E4] flex flex-col transition-colors selection:bg-[#E5D7C3] dark:selection:bg-[#3D3528]">
       
       {/* Aviso de notificação */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-60 bg-stone-900 text-stone-100 px-4 py-2.5 text-xs shadow-xl border border-stone-700 flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-          <button onClick={() => setToastMessage('')} className="ml-2 text-stone-400 hover:text-white">
+        <div className="fixed top-4 right-4 z-60 bg-stone-900 dark:bg-stone-100 text-stone-100 dark:text-stone-900 px-4 py-2.5 text-xs shadow-xl border border-stone-700 dark:border-stone-300 flex items-center gap-2 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600 shrink-0" />
+          <span className="font-medium">{toastMessage}</span>
+          <button onClick={() => setToastMessage('')} className="ml-2 text-stone-400 hover:text-white dark:hover:text-stone-950 cursor-pointer">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -328,7 +333,10 @@ export default function App() {
       {/* 1. Cabeçalho */}
       <Masthead
         teacherAuth={teacherAuth}
-        onOpenTeacherAuth={() => setIsTeacherAuthOpen(true)}
+        onOpenTeacherAuth={() => {
+          setTeacherAuthCustomMessage('');
+          setIsTeacherAuthOpen(true);
+        }}
         onOpenTeacherPortal={() => setIsTeacherPortalOpen(true)}
         onOpenSubmitModal={(tab = 'article') => {
           setSubmitDefaultTab(tab);
@@ -336,14 +344,14 @@ export default function App() {
         }}
       />
 
-      {/* Faixa quando professor estiver conectado */}
+      {/* Faixa quando educador estiver conectado */}
       {teacherAuth.isAuthenticated && (
-        <aside aria-label="Modo professor ativo" className="no-print bg-stone-900 text-stone-100 px-4 py-2 border-b border-stone-800 flex items-center justify-between text-xs">
+        <aside aria-label="Modo educador ativo" className="no-print bg-stone-900 dark:bg-stone-950 text-stone-100 px-4 py-2 border-b border-stone-800 flex items-center justify-between text-xs">
           <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-300" />
               <span>
-                <strong>Modo Professor Ativo:</strong> Conectado como {teacherAuth.teacherName} ({teacherAuth.role})
+                <strong>Modo Educador Ativo:</strong> Conectado como {teacherAuth.teacherName} ({teacherAuth.role})
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -354,14 +362,14 @@ export default function App() {
                 }}
                 className="text-amber-300 hover:underline font-semibold cursor-pointer"
               >
-                + Publicar como Professor
+                + Publicar como Educador
               </button>
               <span>·</span>
               <button
                 onClick={() => setIsTeacherPortalOpen(true)}
                 className="text-stone-300 hover:text-white cursor-pointer"
               >
-                Painel dos Professores
+                Painel dos Educadores
               </button>
               <span>·</span>
               <button
@@ -379,17 +387,17 @@ export default function App() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-8 py-8">
         
         {/* Barra de Filtros e Busca */}
-        <section id="noticias" className="no-print mb-8 pb-4 border-b border-stone-300 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section id="noticias" className="no-print mb-8 pb-4 border-b border-stone-300 dark:border-stone-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
           
-          <div className="flex items-center gap-1 overflow-x-auto p-1 bg-stone-200/60 border border-stone-300">
+          <div className="flex items-center gap-1 overflow-x-auto p-1 bg-stone-200/60 dark:bg-stone-900 border border-stone-300 dark:border-stone-800">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-white text-stone-950 font-semibold shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
+                    ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-stone-100 font-semibold shadow-xs'
+                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
                 }`}
               >
                 {cat}
@@ -405,12 +413,12 @@ export default function App() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar notícias..."
-                className="w-full pl-9 pr-8 py-2 text-xs bg-white border border-stone-300 focus:border-stone-800 focus:outline-hidden"
+                className="w-full pl-9 pr-8 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-2.5 text-stone-400 hover:text-stone-700"
+                  className="absolute right-2.5 top-2.5 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -422,7 +430,7 @@ export default function App() {
                 setSubmitDefaultTab('article');
                 setIsSubmitModalOpen(true);
               }}
-              className="px-3 py-2 bg-stone-900 text-white text-xs font-medium flex items-center gap-1 hover:bg-stone-800 transition-colors whitespace-nowrap cursor-pointer"
+              className="px-3 py-2 bg-stone-900 dark:bg-amber-400 text-white dark:text-stone-950 text-xs font-medium flex items-center gap-1 hover:bg-stone-800 dark:hover:bg-amber-300 transition-colors whitespace-nowrap cursor-pointer shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Nova Notícia</span>
@@ -445,8 +453,8 @@ export default function App() {
         {/* Título da Seção */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <span className="h-4 w-1 bg-stone-900"></span>
-            <h2 className="text-xl sm:text-2xl font-serif-title font-bold text-stone-900">
+            <span className="h-4 w-1 bg-stone-900 dark:bg-amber-400"></span>
+            <h2 className="text-xl sm:text-2xl font-serif-title font-bold text-stone-900 dark:text-stone-100">
               {searchQuery
                 ? `Resultados para "${searchQuery}" (${visibleArticles.length})`
                 : selectedCategory === 'Todas'
@@ -455,21 +463,20 @@ export default function App() {
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-stone-500 font-medium hidden sm:flex">
-            <Wifi className="w-3 h-3 text-emerald-600" />
-            <span>Conectado · Instituto Herdar</span>
+          <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400 font-medium hidden sm:flex">
+            <span>Instituto Herdar</span>
           </div>
         </div>
 
         {/* Lista de Notícias */}
         {visibleArticles.length === 0 ? (
-          <div className="bg-white border border-stone-300 p-8 sm:p-14 text-center my-6">
+          <div className="bg-white dark:bg-[#1A1916] border border-stone-300 dark:border-stone-800 p-8 sm:p-14 text-center my-6">
             <BookOpen className="w-12 h-12 text-stone-400 mx-auto mb-4" />
-            <h3 className="font-serif-title text-2xl font-semibold text-stone-800 mb-2">
+            <h3 className="font-serif-title text-2xl font-semibold text-stone-800 dark:text-stone-200 mb-2">
               Ainda não tem notícias publicadas
             </h3>
-            <p className="text-sm text-stone-600 max-w-md mx-auto mb-6">
-              Qualquer aluno ou professor pode publicar matérias, fotos e avisos da nossa escola.
+            <p className="text-sm text-stone-600 dark:text-stone-400 max-w-md mx-auto mb-6">
+              Qualquer educando ou educador pode publicar notícias, fotos e avisos da nossa escola.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
@@ -477,18 +484,21 @@ export default function App() {
                   setSubmitDefaultTab('article');
                   setIsSubmitModalOpen(true);
                 }}
-                className="px-6 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
+                className="px-6 py-2.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
               >
                 Escrever Primeira Notícia
               </button>
 
               {!teacherAuth.isAuthenticated && (
                 <button
-                  onClick={() => setIsTeacherAuthOpen(true)}
-                  className="px-4 py-2.5 border border-stone-300 hover:border-stone-800 text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors cursor-pointer flex items-center gap-1.5"
+                  onClick={() => {
+                    setTeacherAuthCustomMessage('');
+                    setIsTeacherAuthOpen(true);
+                  }}
+                  className="px-4 py-2.5 border border-stone-300 dark:border-stone-700 hover:border-stone-800 dark:hover:border-stone-400 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 bg-white dark:bg-stone-900"
                 >
-                  <UserCheck className="w-3.5 h-3.5 text-stone-500" />
-                  <span>Área dos Professores</span>
+                  <Lock className="w-3.5 h-3.5 text-stone-500" />
+                  <span>Área dos Educadores</span>
                 </button>
               )}
             </div>
@@ -511,7 +521,12 @@ export default function App() {
           </div>
         )}
 
-        {/* 2. Calendário de Eventos */}
+        {/* 2. Banner Institucional Herdar (Inspirado em herdar.org.br com link para abrir o site) */}
+        <div className="mt-14">
+          <InstitutionalBanner />
+        </div>
+
+        {/* 3. Calendário de Eventos */}
         <EventsSection
           events={events}
           joinedEvents={joinedEvents}
@@ -524,7 +539,7 @@ export default function App() {
           teacherAuth={teacherAuth}
         />
 
-        {/* 3. Fotos da Escola */}
+        {/* 4. Fotos da Escola */}
         <PhotoGallerySection
           photos={photos}
           likedPhotos={likedPhotos}
@@ -539,53 +554,68 @@ export default function App() {
 
       </main>
 
-      {/* Rodapé Simples e Bonito */}
-      <footer className="border-t-2 border-stone-800 bg-[#FAF7F2] text-stone-900 mt-16">
+      {/* Rodapé Elegante com Suporte a Tema Claro / Escuro e Link Herdar */}
+      <footer className="border-t-2 border-stone-800 dark:border-stone-800 bg-[#FAF7F2] dark:bg-[#12110F] text-stone-900 dark:text-stone-200 mt-16 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12">
           
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-stone-300">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-stone-300 dark:border-stone-800">
             <div className="md:col-span-5 space-y-3">
-              <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold block">
+              <span className="text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold block">
                 Comunidade Escolar
               </span>
-              <h3 className="text-2xl font-serif-title font-bold text-stone-950">
+              <h3 className="text-2xl font-serif-title font-bold text-stone-950 dark:text-stone-100">
                 Jornal Herdar
               </h3>
-              <p className="text-xs text-stone-600 leading-relaxed font-reading text-sm max-w-sm">
-                O jornal feito por alunos e professores do Instituto Herdar para divulgar notícias, fotos e avisos da nossa escola.
+              <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-reading text-sm max-w-sm">
+                O jornal feito por educandos e educadores do Instituto Herdar para divulgar notícias, fotos e avisos da nossa comunidade.
               </p>
+              
+              <div className="pt-2">
+                <a
+                  href="https://herdar.org.br/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400 hover:underline"
+                >
+                  <span>Visitar site oficial herdar.org.br</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
 
             <div className="md:col-span-3 space-y-2">
-              <span className="text-xs uppercase tracking-wider text-stone-800 font-bold block mb-3">
+              <span className="text-xs uppercase tracking-wider text-stone-800 dark:text-stone-200 font-bold block mb-3">
                 Seções do Jornal
               </span>
-              <ul className="space-y-1.5 text-xs text-stone-600">
-                <li><a href="#capa" className="hover:text-stone-950 transition-colors">Capa</a></li>
-                <li><a href="#noticias" className="hover:text-stone-950 transition-colors">Notícias</a></li>
-                <li><a href="#eventos" className="hover:text-stone-950 transition-colors">Eventos</a></li>
-                <li><a href="#fotos" className="hover:text-stone-950 transition-colors">Fotos</a></li>
+              <ul className="space-y-1.5 text-xs text-stone-600 dark:text-stone-400">
+                <li><a href="#capa" className="hover:text-stone-950 dark:hover:text-white transition-colors">Capa</a></li>
+                <li><a href="#noticias" className="hover:text-stone-950 dark:hover:text-white transition-colors">Notícias</a></li>
+                <li><a href="#eventos" className="hover:text-stone-950 dark:hover:text-white transition-colors">Eventos</a></li>
+                <li><a href="#fotos" className="hover:text-stone-950 dark:hover:text-white transition-colors">Fotos</a></li>
               </ul>
             </div>
 
             <div className="md:col-span-4 space-y-3">
-              <span className="text-xs uppercase tracking-wider text-stone-800 font-bold block mb-3">
-                Área dos Professores
+              <span className="text-xs uppercase tracking-wider text-stone-800 dark:text-stone-200 font-bold block mb-3">
+                Área dos Educadores
               </span>
-              <p className="text-xs text-stone-600 leading-relaxed">
-                Professores podem publicar comunicados oficiais e gerenciar o jornal entrando com sua conta Google ou se identificando com 1 clique.
+              <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+                Apenas educadores com senha podem excluir notícias, fotos e gerenciar os comunicados do jornal.
               </p>
 
               <div className="pt-2">
                 <button
-                  onClick={teacherAuth.isAuthenticated ? () => setIsTeacherPortalOpen(true) : () => setIsTeacherAuthOpen(true)}
-                  className="text-xs text-stone-600 hover:text-stone-950 border-b border-stone-400 hover:border-stone-900 pb-0.5 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={teacherAuth.isAuthenticated ? () => setIsTeacherPortalOpen(true) : () => {
+                    setTeacherAuthCustomMessage('');
+                    setIsTeacherAuthOpen(true);
+                  }}
+                  className="text-xs text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white border-b border-stone-400 dark:border-stone-700 hover:border-stone-900 dark:hover:border-stone-400 pb-0.5 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <UserCheck className="w-3.5 h-3.5 text-stone-600" />
+                  <UserCheck className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
                   <span>
                     {teacherAuth.isAuthenticated 
-                      ? 'Painel dos Professores (Aberto)' 
-                      : 'Acessar Área do Professor'}
+                      ? 'Painel dos Educadores (Aberto)' 
+                      : 'Acessar com Senha de Educador'}
                   </span>
                 </button>
               </div>
@@ -593,7 +623,7 @@ export default function App() {
               <div className="pt-1">
                 <button
                   onClick={() => window.print()}
-                  className="text-xs text-stone-500 hover:text-stone-900 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="text-xs text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>Imprimir Jornal</span>
@@ -602,16 +632,23 @@ export default function App() {
             </div>
           </div>
 
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-stone-500 gap-2">
-            <div>
-              © Jornal Herdar · Instituto Herdar.
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-stone-500 dark:text-stone-400 gap-2">
+            <div className="flex items-center gap-1.5">
+              <span>© {new Date().getFullYear()} Jornal Herdar · Inspirado no</span>
+              <a
+                href="https://herdar.org.br/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-stone-800 dark:text-stone-200 hover:underline"
+              >
+                Instituto Herdar
+              </a>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>Online</span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-[11px] text-stone-500 dark:text-stone-400">
+                <Heart className="w-3 h-3 text-rose-500 fill-current" />
+                <span>Educação · Cultura · Comunidade</span>
               </span>
-              <span>Instituto Herdar</span>
             </div>
           </div>
 
@@ -623,6 +660,7 @@ export default function App() {
         isOpen={isTeacherAuthOpen}
         onClose={() => setIsTeacherAuthOpen(false)}
         onSuccess={handleTeacherLoginSuccess}
+        titleMessage={teacherAuthCustomMessage}
       />
 
       <TeacherPortalModal

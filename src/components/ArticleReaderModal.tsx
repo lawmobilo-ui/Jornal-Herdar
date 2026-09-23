@@ -7,8 +7,8 @@ import {
   MessageSquare, 
   Check, 
   Send, 
-  ShieldCheck,
-  Trash2
+  ShieldCheck, 
+  Trash2 
 } from 'lucide-react';
 import { Article, ArticleComment, TeacherAuth } from '../types/newspaper';
 
@@ -40,6 +40,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 
   if (!article) return null;
 
+  const isEducator = teacherAuth?.isAuthenticated;
   const articleComments = comments.filter(c => c.articleId === article.id);
 
   const handleCopyLink = () => {
@@ -73,7 +74,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
   };
 
   const handleDelete = () => {
-    if (onDeleteArticle) {
+    if (isEducator && onDeleteArticle) {
       onDeleteArticle(article.id);
       onClose();
     }
@@ -81,12 +82,12 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-950/80 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-[#FAF8F5] text-stone-900 border border-stone-300 w-full max-w-4xl max-h-[92vh] shadow-2xl flex flex-col my-auto relative">
+      <div className="bg-[#FAF8F5] dark:bg-[#141311] text-stone-900 dark:text-stone-100 border border-stone-300 dark:border-stone-800 w-full max-w-4xl max-h-[92vh] shadow-2xl flex flex-col my-auto relative transition-colors">
         
         {/* Barra superior */}
-        <div className="p-3 sm:px-6 border-b border-stone-200 bg-white flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-2 text-xs text-stone-500">
-            <span className="font-semibold text-stone-700">{article.category}</span>
+        <div className="p-3 sm:px-6 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1A1916] flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
+            <span className="font-semibold text-stone-700 dark:text-amber-400">{article.category}</span>
             <span>·</span>
             <span>{article.date}</span>
             <span>·</span>
@@ -96,10 +97,10 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onToggleLike(article.id)}
-              className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors border ${
+              className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors border cursor-pointer ${
                 isLiked
-                  ? 'bg-rose-50 border-rose-200 text-rose-700 font-semibold'
-                  : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
+                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-400 font-semibold'
+                  : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800'
               }`}
               title="Curtir notícia"
             >
@@ -109,25 +110,26 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 
             <button
               onClick={handleCopyLink}
-              className="p-1.5 bg-white border border-stone-200 text-stone-600 hover:text-stone-900 transition-colors"
+              className="p-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
               title="Copiar link da notícia"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Share2 className="w-4 h-4" />}
             </button>
 
             <button
               onClick={() => window.print()}
-              className="p-1.5 bg-white border border-stone-200 text-stone-600 hover:text-stone-900 transition-colors"
+              className="p-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
               title="Imprimir notícia"
             >
               <Printer className="w-4 h-4" />
             </button>
 
-            {onDeleteArticle && (
+            {/* Exclusão SOMENTE para educadores autenticados */}
+            {isEducator && onDeleteArticle && (
               <button
                 onClick={handleDelete}
-                className="p-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-800 transition-colors flex items-center gap-1 text-xs px-2"
-                title="Excluir notícia"
+                className="p-1.5 bg-white dark:bg-stone-900 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-800 transition-colors flex items-center gap-1 text-xs px-2 cursor-pointer"
+                title="Excluir notícia (Modo Educador)"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Excluir</span>
@@ -136,7 +138,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 text-stone-500 hover:text-stone-900 transition-colors ml-1"
+              className="p-1.5 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors ml-1 cursor-pointer"
               aria-label="Fechar"
             >
               <X className="w-6 h-6" />
@@ -149,32 +151,32 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
           <article className="max-w-2xl mx-auto">
             
             <div className="mb-6">
-              <span className="text-xs uppercase tracking-widest text-stone-500 font-medium">
+              <span className="text-xs uppercase tracking-widest text-stone-500 dark:text-amber-400 font-medium">
                 {article.category}
               </span>
-              <h1 className="text-2xl sm:text-4xl font-serif-title font-bold text-stone-900 tracking-tight leading-tight mt-2 mb-4" style={{ textWrap: 'balance' }}>
+              <h1 className="text-2xl sm:text-4xl font-serif-title font-bold text-stone-900 dark:text-stone-100 tracking-tight leading-tight mt-2 mb-4" style={{ textWrap: 'balance' }}>
                 {article.title}
               </h1>
-              <p className="text-base sm:text-lg text-stone-600 font-serif-title italic leading-relaxed">
+              <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 font-serif-title italic leading-relaxed">
                 {article.subtitle}
               </p>
             </div>
 
             {/* Autor */}
-            <div className="flex items-center gap-3 py-4 border-y border-stone-200 mb-8">
-              <div className="w-10 h-10 rounded-full bg-stone-200 text-stone-700 flex items-center justify-center font-serif-title font-semibold text-sm">
+            <div className="flex items-center gap-3 py-4 border-y border-stone-200 dark:border-stone-800 mb-8">
+              <div className="w-10 h-10 rounded-full bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-200 flex items-center justify-center font-serif-title font-semibold text-sm">
                 {article.authorName.charAt(0)}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-stone-900">{article.authorName}</span>
-                  {(article.authorRole === 'direcao' || article.authorRole === 'professor') && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-900 font-medium bg-amber-50 px-1.5 py-0.5 border border-amber-200">
-                      <ShieldCheck className="w-3 h-3" /> Publicado por Professor
+                  <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{article.authorName}</span>
+                  {(article.authorRole === 'direcao' || article.authorRole === 'professor' || article.authorRole === 'educador') && (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-900 dark:text-amber-300 font-medium bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 border border-amber-200 dark:border-amber-800/80">
+                      <ShieldCheck className="w-3 h-3" /> Publicado por Educador(a)
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-stone-500">
+                <div className="text-xs text-stone-500 dark:text-stone-400">
                   {article.authorGrade} · Jornal Herdar
                 </div>
               </div>
@@ -183,7 +185,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
             {/* Imagem */}
             {article.coverImage && (
               <figure className="mb-8">
-                <div className="overflow-hidden border border-stone-200 bg-stone-100">
+                <div className="overflow-hidden border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-900">
                   <img
                     src={article.coverImage}
                     alt={article.title}
@@ -191,7 +193,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                   />
                 </div>
                 {article.imageCaption && (
-                  <figcaption className="text-xs font-reading text-stone-500 italic mt-2 text-center">
+                  <figcaption className="text-xs font-reading text-stone-500 dark:text-stone-400 italic mt-2 text-center">
                     {article.imageCaption}
                   </figcaption>
                 )}
@@ -200,17 +202,17 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 
             {/* Frase em destaque */}
             {article.pullQuote && (
-              <blockquote className="my-8 px-6 py-4 border-l-3 border-stone-900 bg-stone-100/60 font-serif-title text-xl text-stone-900 italic leading-snug">
+              <blockquote className="my-8 px-6 py-4 border-l-3 border-stone-900 dark:border-amber-400 bg-stone-100/60 dark:bg-[#1E1C19] font-serif-title text-xl text-stone-900 dark:text-stone-100 italic leading-snug">
                 "{article.pullQuote}"
               </blockquote>
             )}
 
             {/* Texto */}
-            <div className="text-stone-800 font-reading text-lg leading-relaxed space-y-6">
+            <div className="text-stone-800 dark:text-stone-200 font-reading text-lg leading-relaxed space-y-6">
               {article.content.split('\n\n').map((paragraph, idx) => (
                 <p 
                   key={idx}
-                  className={idx === 0 ? "first-letter:text-5xl first-letter:font-serif-title first-letter:font-bold first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-stone-900" : ""}
+                  className={idx === 0 ? "first-letter:text-5xl first-letter:font-serif-title first-letter:font-bold first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:text-stone-900 dark:first-letter:text-amber-400" : ""}
                 >
                   {paragraph}
                 </p>
@@ -219,10 +221,10 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
 
             {/* Tags */}
             {article.tags && article.tags.length > 0 && (
-              <div className="mt-8 pt-4 border-t border-stone-200 flex flex-wrap items-center gap-2 text-xs text-stone-500">
-                <span className="font-semibold text-stone-700">Palavras-chave:</span>
+              <div className="mt-8 pt-4 border-t border-stone-200 dark:border-stone-800 flex flex-wrap items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
+                <span className="font-semibold text-stone-700 dark:text-stone-300">Palavras-chave:</span>
                 {article.tags.map((tag, i) => (
-                  <span key={i} className="hover:text-stone-900">
+                  <span key={i} className="hover:text-stone-900 dark:hover:text-stone-100">
                     #{tag}{i < article.tags.length - 1 ? ' · ' : ''}
                   </span>
                 ))}
@@ -230,19 +232,19 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
             )}
 
             {/* Comentários */}
-            <section className="mt-12 pt-8 border-t-2 border-stone-200">
+            <section className="mt-12 pt-8 border-t-2 border-stone-200 dark:border-stone-800">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-stone-700" />
-                  <h3 className="font-serif-title font-semibold text-xl text-stone-900">
+                  <MessageSquare className="w-5 h-5 text-stone-700 dark:text-amber-400" />
+                  <h3 className="font-serif-title font-semibold text-xl text-stone-900 dark:text-stone-100">
                     Comentários ({articleComments.length})
                   </h3>
                 </div>
               </div>
 
               {/* Form de Comentário */}
-              <form onSubmit={handlePostComment} className="mb-8 p-4 bg-white border border-stone-200 space-y-3">
-                <span className="text-xs uppercase tracking-wider text-stone-600 font-semibold block">
+              <form onSubmit={handlePostComment} className="mb-8 p-4 bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800 space-y-3">
+                <span className="text-xs uppercase tracking-wider text-stone-600 dark:text-stone-300 font-semibold block">
                   Deixe seu comentário sobre esta notícia
                 </span>
                 
@@ -252,15 +254,15 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                     value={commentName}
                     onChange={(e) => setCommentName(e.target.value)}
                     placeholder="Seu Nome"
-                    className="px-3 py-1.5 text-xs bg-stone-50 border border-stone-300 focus:border-stone-800 focus:outline-hidden"
+                    className="px-3 py-1.5 text-xs bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     required
                   />
                   <input
                     type="text"
                     value={commentGrade}
                     onChange={(e) => setCommentGrade(e.target.value)}
-                    placeholder="Sua Turma ou Matéria"
-                    className="px-3 py-1.5 text-xs bg-stone-50 border border-stone-300 focus:border-stone-800 focus:outline-hidden"
+                    placeholder="Sua Turma ou Função"
+                    className="px-3 py-1.5 text-xs bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   />
                 </div>
 
@@ -269,14 +271,14 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Escreva seu comentário..."
-                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 focus:border-stone-800 focus:outline-hidden"
+                  className="w-full px-3 py-2 text-xs bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   required
                 />
 
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-stone-900 text-stone-50 text-xs font-medium hover:bg-stone-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-1.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Enviar Comentário</span>
@@ -287,17 +289,17 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
               {/* Lista de comentários */}
               <div className="space-y-4">
                 {articleComments.length === 0 ? (
-                  <p className="text-xs text-stone-500 italic text-center py-4">
+                  <p className="text-xs text-stone-500 dark:text-stone-400 italic text-center py-4">
                     Nenhum comentário ainda. Seja o primeiro a comentar!
                   </p>
                 ) : (
                   articleComments.map((comm) => (
-                    <div key={comm.id} className="p-4 bg-white border border-stone-200">
-                      <div className="flex items-center justify-between text-xs text-stone-500 mb-1.5">
-                        <span className="font-semibold text-stone-800">{comm.authorName} ({comm.authorGrade})</span>
+                    <div key={comm.id} className="p-4 bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800">
+                      <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 mb-1.5">
+                        <span className="font-semibold text-stone-800 dark:text-stone-200">{comm.authorName} ({comm.authorGrade})</span>
                         <span>{comm.date}</span>
                       </div>
-                      <p className="text-xs text-stone-700 leading-relaxed font-reading text-sm">
+                      <p className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed font-reading text-sm">
                         {comm.text}
                       </p>
                     </div>

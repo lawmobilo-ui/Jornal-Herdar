@@ -9,9 +9,12 @@ import {
   LogOut, 
   Eye, 
   Image as ImageIcon,
-  ShieldCheck
+  ShieldCheck,
+  KeyRound,
+  Check
 } from 'lucide-react';
 import { Article, SchoolEvent, PhotoSubmission, TeacherAuth, ArticleCategory } from '../types/newspaper';
+import { addEducatorPassword, getValidPasswords } from '../utils/authPasswords';
 
 interface TeacherPortalModalProps {
   isOpen: boolean;
@@ -40,7 +43,7 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
   onUpdatePhotos,
   onOpenArticleReader,
 }) => {
-  const [activeTab, setActiveTab] = useState<'articles' | 'events' | 'photos' | 'createOfficial'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'events' | 'photos' | 'createOfficial' | 'passwords'>('articles');
   const [feedbackNotice, setFeedbackNotice] = useState<string>('');
 
   // Formulário de aviso/comunicado
@@ -48,6 +51,10 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
   const [officialCategory, setOfficialCategory] = useState<ArticleCategory>('Comunicados');
   const [officialContent, setOfficialContent] = useState('');
   const [officialIsLead, setOfficialIsLead] = useState(false);
+
+  // Aba de Senhas
+  const [newPassInput, setNewPassInput] = useState('');
+  const [passwordsList, setPasswordsList] = useState<string[]>(getValidPasswords());
 
   if (!isOpen) return null;
 
@@ -91,7 +98,17 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
     }
   };
 
-  // Criar aviso direto como professor
+  // Cadastrar nova senha de educador
+  const handleAddPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassInput.trim()) return;
+    addEducatorPassword(newPassInput.trim());
+    setPasswordsList(getValidPasswords());
+    setNewPassInput('');
+    showNotice('Nova senha de educador cadastrada com sucesso!');
+  };
+
+  // Criar aviso direto como educador
   const handleCreateOfficial = (e: React.FormEvent) => {
     e.preventDefault();
     if (!officialTitle.trim() || !officialContent.trim()) return;
@@ -99,11 +116,11 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
     const newArticle: Article = {
       id: `doc-${Date.now()}`,
       title: officialTitle.trim(),
-      subtitle: `Aviso postado por ${auth.teacherName || 'Professor(a)'} (${auth.role || 'Instituto Herdar'}).`,
+      subtitle: `Aviso publicado por ${auth.teacherName || 'Educador(a)'} (${auth.role || 'Instituto Herdar'}).`,
       category: officialCategory,
-      authorName: auth.teacherName || 'Professor(a)',
-      authorGrade: auth.role || 'Professor(a)',
-      authorRole: 'professor',
+      authorName: auth.teacherName || 'Educador(a)',
+      authorGrade: auth.role || 'Educador(a)',
+      authorRole: 'educador',
       date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }),
       timestamp: Date.now(),
       readTime: '1 min',
@@ -132,23 +149,23 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-950/80 backdrop-blur-xs">
-      <div className="bg-[#FAF8F5] text-stone-900 border border-stone-300 w-full max-w-5xl h-[92vh] shadow-2xl flex flex-col overflow-hidden">
+      <div className="bg-[#FAF8F5] dark:bg-[#141311] text-stone-900 dark:text-stone-100 border border-stone-300 dark:border-stone-800 w-full max-w-5xl h-[92vh] shadow-2xl flex flex-col overflow-hidden transition-colors">
         
         {/* Cabeçalho */}
-        <div className="p-4 sm:p-6 border-b border-stone-200 bg-white flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1A1916] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-stone-900 text-amber-300 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-stone-900 dark:bg-stone-800 text-amber-300 flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Jornal Herdar</span>
-                <span className="text-[11px] bg-stone-900 text-amber-300 px-2 py-0.5 font-semibold">
-                  Modo Professor
+                <span className="text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">Jornal Herdar</span>
+                <span className="text-[11px] bg-stone-900 dark:bg-amber-400 text-amber-300 dark:text-stone-950 px-2 py-0.5 font-semibold">
+                  Modo Educador
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-serif-title font-semibold text-stone-900">
-                Painel dos Professores
+              <h2 className="text-xl sm:text-2xl font-serif-title font-semibold text-stone-900 dark:text-stone-100">
+                Painel dos Educadores
               </h2>
             </div>
           </div>
@@ -159,15 +176,15 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
                 onLogout();
                 onClose();
               }}
-              className="text-xs px-3 py-1.5 border border-stone-300 hover:bg-stone-100 text-stone-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Sair do modo professor"
+              className="text-xs px-3 py-1.5 border border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Sair do modo educador"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sair</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-stone-500 hover:text-stone-900 transition-colors"
+              className="p-1.5 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
               aria-label="Fechar"
             >
               <X className="w-6 h-6" />
@@ -177,22 +194,22 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
 
         {/* Notificação temporária */}
         {feedbackNotice && (
-          <div className="bg-stone-900 text-amber-300 text-xs px-6 py-2 flex items-center justify-between animate-fade-in">
+          <div className="bg-stone-900 dark:bg-stone-800 text-amber-300 text-xs px-6 py-2 flex items-center justify-between animate-fade-in">
             <span>{feedbackNotice}</span>
-            <button onClick={() => setFeedbackNotice('')} className="text-stone-400 hover:text-white">
+            <button onClick={() => setFeedbackNotice('')} className="text-stone-400 hover:text-white cursor-pointer">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
 
-        {/* Abas */}
-        <div className="px-6 border-b border-stone-200 bg-stone-100 flex items-center gap-1 overflow-x-auto text-xs font-medium">
+        {/* Abas com a Aba de Senhas */}
+        <div className="px-6 border-b border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-900 flex items-center gap-1 overflow-x-auto text-xs font-medium">
           <button
             onClick={() => setActiveTab('articles')}
             className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
               activeTab === 'articles'
-                ? 'border-stone-900 text-stone-900 font-semibold bg-white'
-                : 'border-transparent text-stone-600 hover:text-stone-900'
+                ? 'border-stone-900 dark:border-amber-400 text-stone-900 dark:text-stone-100 font-semibold bg-white dark:bg-[#1A1916]'
+                : 'border-transparent text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -203,8 +220,8 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
             onClick={() => setActiveTab('events')}
             className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
               activeTab === 'events'
-                ? 'border-stone-900 text-stone-900 font-semibold bg-white'
-                : 'border-transparent text-stone-600 hover:text-stone-900'
+                ? 'border-stone-900 dark:border-amber-400 text-stone-900 dark:text-stone-100 font-semibold bg-white dark:bg-[#1A1916]'
+                : 'border-transparent text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
             <Calendar className="w-4 h-4" />
@@ -215,8 +232,8 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
             onClick={() => setActiveTab('photos')}
             className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
               activeTab === 'photos'
-                ? 'border-stone-900 text-stone-900 font-semibold bg-white'
-                : 'border-transparent text-stone-600 hover:text-stone-900'
+                ? 'border-stone-900 dark:border-amber-400 text-stone-900 dark:text-stone-100 font-semibold bg-white dark:bg-[#1A1916]'
+                : 'border-transparent text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
             <ImageIcon className="w-4 h-4" />
@@ -227,12 +244,25 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
             onClick={() => setActiveTab('createOfficial')}
             className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
               activeTab === 'createOfficial'
-                ? 'border-stone-900 text-stone-900 font-semibold bg-white'
-                : 'border-transparent text-stone-600 hover:text-stone-900'
+                ? 'border-stone-900 dark:border-amber-400 text-stone-900 dark:text-stone-100 font-semibold bg-white dark:bg-[#1A1916]'
+                : 'border-transparent text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
             <Plus className="w-4 h-4" />
-            <span>Publicar Aviso da Escola</span>
+            <span>Publicar Aviso</span>
+          </button>
+
+          {/* Aba de Senhas */}
+          <button
+            onClick={() => setActiveTab('passwords')}
+            className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'passwords'
+                ? 'border-stone-900 dark:border-amber-400 text-stone-900 dark:text-stone-100 font-semibold bg-white dark:bg-[#1A1916]'
+                : 'border-transparent text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+            }`}
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>Senhas de Educador</span>
           </button>
         </div>
 
@@ -243,37 +273,37 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
           {activeTab === 'articles' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs uppercase tracking-wider text-stone-600 font-semibold">
+                <span className="text-xs uppercase tracking-wider text-stone-600 dark:text-stone-400 font-semibold">
                   Notícias Publicadas no Jornal
                 </span>
-                <span className="text-xs text-stone-500">
-                  Todas as alterações salvam na hora para todos.
+                <span className="text-xs text-stone-500 dark:text-stone-400">
+                  Apenas educadores podem excluir ou alterar destaques.
                 </span>
               </div>
 
               {articles.length === 0 ? (
-                <div className="text-center py-12 bg-white border border-stone-200">
+                <div className="text-center py-12 bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800">
                   <FileText className="w-8 h-8 text-stone-400 mx-auto mb-2" />
-                  <p className="text-xs text-stone-600">Nenhuma notícia publicada ainda.</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400">Nenhuma notícia publicada ainda.</p>
                 </div>
               ) : (
-                <div className="bg-white border border-stone-200 divide-y divide-stone-100 overflow-hidden">
+                <div className="bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800 divide-y divide-stone-100 dark:divide-stone-800 overflow-hidden">
                   {articles.map((art) => (
-                    <div key={art.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stone-50 transition-colors">
+                    <div key={art.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stone-50 dark:hover:bg-[#22201D] transition-colors">
                       <div className="flex-1 pr-4">
-                        <div className="flex items-center gap-2 text-xs text-stone-500 mb-1">
-                          <span className="font-semibold text-stone-800">{art.category}</span>
+                        <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400 mb-1">
+                          <span className="font-semibold text-stone-800 dark:text-amber-400">{art.category}</span>
                           <span>·</span>
                           <span>{art.authorName} ({art.authorGrade})</span>
                           <span>·</span>
                           <span>{art.date}</span>
                           {art.isLeadStory && (
-                            <span className="text-amber-800 font-semibold flex items-center gap-0.5">
+                            <span className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-0.5">
                               ★ Destaque
                             </span>
                           )}
                         </div>
-                        <h4 className="font-serif-title font-semibold text-stone-900 text-base">
+                        <h4 className="font-serif-title font-semibold text-stone-900 dark:text-stone-100 text-base">
                           {art.title}
                         </h4>
                       </div>
@@ -281,7 +311,7 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => onOpenArticleReader(art)}
-                          className="p-1.5 border border-stone-200 hover:bg-stone-100 text-stone-600 text-xs flex items-center gap-1 cursor-pointer"
+                          className="p-1.5 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 text-xs flex items-center gap-1 cursor-pointer"
                           title="Ler notícia"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -292,8 +322,8 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
                           onClick={() => handleToggleLead(art.id)}
                           className={`p-1.5 border text-xs flex items-center gap-1 transition-colors cursor-pointer ${
                             art.isLeadStory 
-                              ? 'bg-amber-100 border-amber-300 text-amber-900 font-medium' 
-                              : 'border-stone-200 text-stone-600 hover:bg-stone-100'
+                              ? 'bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-300 font-medium' 
+                              : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                           }`}
                           title="Colocar como destaque da capa"
                         >
@@ -303,7 +333,7 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
 
                         <button
                           onClick={() => handleDeleteArticle(art.id)}
-                          className="p-1.5 border border-red-200 text-red-600 hover:bg-red-50 text-xs flex items-center gap-1 cursor-pointer"
+                          className="p-1.5 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs flex items-center gap-1 cursor-pointer"
                           title="Excluir notícia"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -321,35 +351,35 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
           {activeTab === 'events' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs uppercase tracking-wider text-stone-600 font-semibold">
+                <span className="text-xs uppercase tracking-wider text-stone-600 dark:text-stone-400 font-semibold">
                   Eventos do Calendário
                 </span>
               </div>
 
               {events.length === 0 ? (
-                <div className="text-center py-12 bg-white border border-stone-200">
+                <div className="text-center py-12 bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800">
                   <Calendar className="w-8 h-8 text-stone-400 mx-auto mb-2" />
-                  <p className="text-xs text-stone-600">Nenhum evento cadastrado no momento.</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400">Nenhum evento cadastrado no momento.</p>
                 </div>
               ) : (
-                <div className="bg-white border border-stone-200 divide-y divide-stone-100">
+                <div className="bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800 divide-y divide-stone-100 dark:divide-stone-800">
                   {events.map((ev) => (
                     <div key={ev.id} className="p-4 flex items-center justify-between">
                       <div>
-                        <div className="text-xs text-stone-500 mb-1">
+                        <div className="text-xs text-stone-500 dark:text-stone-400 mb-1">
                           {ev.date} · {ev.time} · {ev.location}
                         </div>
-                        <h4 className="font-serif-title font-semibold text-stone-900">
+                        <h4 className="font-serif-title font-semibold text-stone-900 dark:text-stone-100">
                           {ev.title}
                         </h4>
-                        <span className="text-xs text-stone-500">
+                        <span className="text-xs text-stone-500 dark:text-stone-400">
                           Por: {ev.organizer} ({ev.organizerRole})
                         </span>
                       </div>
 
                       <button
                         onClick={() => handleDeleteEvent(ev.id)}
-                        className="p-2 text-stone-400 hover:text-red-700 hover:bg-red-50 transition-colors"
+                        className="p-2 text-stone-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
                         title="Excluir evento"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -365,28 +395,28 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
           {activeTab === 'photos' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs uppercase tracking-wider text-stone-600 font-semibold">
+                <span className="text-xs uppercase tracking-wider text-stone-600 dark:text-stone-400 font-semibold">
                   Fotos do Mural
                 </span>
               </div>
 
               {photos.length === 0 ? (
-                <div className="text-center py-12 bg-white border border-stone-200">
+                <div className="text-center py-12 bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800">
                   <ImageIcon className="w-8 h-8 text-stone-400 mx-auto mb-2" />
-                  <p className="text-xs text-stone-600">Nenhuma foto postada no momento.</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400">Nenhuma foto postada no momento.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {photos.map((ph) => (
-                    <div key={ph.id} className="bg-white border border-stone-200 overflow-hidden relative group">
+                    <div key={ph.id} className="bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800 overflow-hidden relative group">
                       <img src={ph.imageUrl} alt={ph.title} className="w-full aspect-video object-cover" />
                       <div className="p-3">
-                        <p className="font-serif-title font-semibold text-xs text-stone-900 truncate">{ph.title}</p>
-                        <p className="text-[11px] text-stone-500">{ph.photographer} ({ph.grade})</p>
+                        <p className="font-serif-title font-semibold text-xs text-stone-900 dark:text-stone-100 truncate">{ph.title}</p>
+                        <p className="text-[11px] text-stone-500 dark:text-stone-400">{ph.photographer} ({ph.grade})</p>
                       </div>
                       <button
                         onClick={() => handleDeletePhoto(ph.id)}
-                        className="absolute top-2 right-2 p-1.5 bg-stone-900/80 text-white hover:bg-red-700 transition-colors"
+                        className="absolute top-2 right-2 p-1.5 bg-stone-900/80 text-white hover:bg-red-700 transition-colors cursor-pointer"
                         title="Excluir foto"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -400,36 +430,36 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
 
           {/* ABA 4: PUBLICAR AVISO */}
           {activeTab === 'createOfficial' && (
-            <form onSubmit={handleCreateOfficial} className="max-w-2xl mx-auto space-y-4 bg-white p-6 sm:p-8 border border-stone-200">
+            <form onSubmit={handleCreateOfficial} className="max-w-2xl mx-auto space-y-4 bg-white dark:bg-[#1A1916] p-6 sm:p-8 border border-stone-200 dark:border-stone-800">
               <div>
-                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Aviso Rápido</span>
-                <h3 className="text-xl font-serif-title font-semibold text-stone-900 mt-1">
-                  Publicar Aviso da Escola
+                <span className="text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">Aviso Rápido</span>
+                <h3 className="text-xl font-serif-title font-semibold text-stone-900 dark:text-stone-100 mt-1">
+                  Publicar Aviso do Educador
                 </h3>
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                   Título do Aviso *
                 </label>
                 <input
                   type="text"
                   value={officialTitle}
                   onChange={(e) => setOfficialTitle(e.target.value)}
-                  placeholder="Ex: Informações sobre as provas da próxima semana"
-                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                  placeholder="Ex: Informações sobre os horários e oficinas"
+                  className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                   Assunto
                 </label>
                 <select
                   value={officialCategory}
                   onChange={(e) => setOfficialCategory(e.target.value as ArticleCategory)}
-                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                  className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                 >
                   <option value="Comunicados">Comunicados da Escola</option>
                   <option value="Notícias da Escola">Notícias da Escola</option>
@@ -439,20 +469,20 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                   Texto do Aviso *
                 </label>
                 <textarea
                   rows={6}
                   value={officialContent}
                   onChange={(e) => setOfficialContent(e.target.value)}
-                  placeholder="Escreva a mensagem que você quer passar para os alunos e famílias..."
-                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden font-reading text-base"
+                  placeholder="Escreva a mensagem para os educandos e famílias..."
+                  className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden font-reading text-base"
                   required
                 />
               </div>
 
-              <div className="flex items-center gap-2 p-3 bg-stone-50 border border-stone-200">
+              <div className="flex items-center gap-2 p-3 bg-stone-50 dark:bg-[#22201D] border border-stone-200 dark:border-stone-800">
                 <input
                   type="checkbox"
                   id="leadOfficial"
@@ -460,7 +490,7 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
                   onChange={(e) => setOfficialIsLead(e.target.checked)}
                   className="w-4 h-4 text-stone-900 border-stone-300"
                 />
-                <label htmlFor="leadOfficial" className="text-xs text-stone-700 font-medium cursor-pointer">
+                <label htmlFor="leadOfficial" className="text-xs text-stone-700 dark:text-stone-300 font-medium cursor-pointer">
                   Destacar como notícia principal na capa do jornal
                 </label>
               </div>
@@ -468,12 +498,71 @@ export const TeacherPortalModal: React.FC<TeacherPortalModalProps> = ({
               <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
+                  className="px-6 py-2.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
                 >
                   Publicar Aviso Agora
                 </button>
               </div>
             </form>
+          )}
+
+          {/* ABA 5: SENHAS DE EDUCADOR */}
+          {activeTab === 'passwords' && (
+            <div className="max-w-2xl mx-auto space-y-6 bg-white dark:bg-[#1A1916] p-6 sm:p-8 border border-stone-200 dark:border-stone-800">
+              <div>
+                <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">
+                  <KeyRound className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                  <span>Gerenciamento de Acesso</span>
+                </div>
+                <h3 className="text-xl font-serif-title font-semibold text-stone-900 dark:text-stone-100 mt-1">
+                  Aba de Senhas dos Educadores
+                </h3>
+                <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
+                  Para excluir notícias, eventos ou fotos, o usuário precisa digitar uma destas senhas de educador. Você pode cadastrar novas senhas para a equipe aqui.
+                </p>
+              </div>
+
+              {/* Senhas ativas */}
+              <div className="p-4 bg-stone-50 dark:bg-[#22201D] border border-stone-200 dark:border-stone-800 space-y-3">
+                <span className="text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold block">
+                  Senhas Válidas no Momento
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {passwordsList.map((pass, i) => (
+                    <span 
+                      key={i} 
+                      className="px-3 py-1 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-xs font-mono font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{pass}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Adicionar nova senha */}
+              <form onSubmit={handleAddPassword} className="space-y-3 pt-2">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold">
+                  Cadastrar Nova Senha de Educador
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newPassInput}
+                    onChange={(e) => setNewPassInput(e.target.value)}
+                    placeholder="Ex: herdar2026, escolaherdar"
+                    className="flex-1 px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden font-mono"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
+                  >
+                    Adicionar Senha
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
 
         </div>

@@ -10,8 +10,8 @@ export interface Article {
   subtitle: string;
   category: ArticleCategory;
   authorName: string;
-  authorGrade: string; // e.g. "3º Ano A", "Prof. Thiago"
-  authorRole: 'aluno' | 'professor' | 'gremio' | 'direcao';
+  authorGrade: string; // e.g. "3º Ano A", "Educador Thiago"
+  authorRole: 'educando' | 'educador' | 'aluno' | 'professor' | 'gremio' | 'direcao';
   date: string;
   timestamp: number;
   readTime: string;

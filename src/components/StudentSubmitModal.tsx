@@ -9,9 +9,11 @@ import {
   Eye, 
   FileText, 
   ShieldCheck, 
-  AlertCircle 
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 import { Article, ArticleCategory, SchoolEvent, PhotoSubmission, TeacherAuth } from '../types/newspaper';
+import { verifyEducatorPassword } from '../utils/authPasswords';
 
 interface StudentSubmitModalProps {
   isOpen: boolean;
@@ -38,17 +40,20 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
   const [previewMode, setPreviewMode] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   
-  // Tipo de quem publica: Aluno ou Professor
-  const [authorType, setAuthorType] = useState<'aluno' | 'professor'>(
-    teacherAuth.isAuthenticated ? 'professor' : 'aluno'
+  // Tipo de autor: Educando ou Educador
+  const [authorType, setAuthorType] = useState<'educando' | 'educador'>(
+    teacherAuth.isAuthenticated ? 'educador' : 'educando'
   );
+
+  // Senha do educador quando não autenticado
+  const [educatorPassInput, setEducatorPassInput] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (teacherAuth.isAuthenticated) {
-      setAuthorType('professor');
+      setAuthorType('educador');
       if (teacherAuth.teacherName) {
         setArtAuthorName(teacherAuth.teacherName);
         setArtAuthorGrade(teacherAuth.role);
@@ -97,7 +102,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
     teacherAuth.isAuthenticated ? teacherAuth.teacherName : ''
   );
   const [evRole, setEvRole] = useState(
-    teacherAuth.isAuthenticated ? 'Professores' : 'Alunos'
+    teacherAuth.isAuthenticated ? 'Educadores' : 'Educandos'
   );
 
   if (!isOpen) return null;
@@ -140,27 +145,36 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
       return;
     }
 
-    const isPublishingAsTeacher = authorType === 'professor';
+    const isEducator = authorType === 'educador';
 
-    if (isPublishingAsTeacher && !teacherAuth.isAuthenticated) {
+    // Se estiver publicando como Educador e não autenticado, exige a senha de educador
+    if (isEducator && !teacherAuth.isAuthenticated) {
+      if (!educatorPassInput.trim()) {
+        setErrorMessage('Para publicar como Educador(a), digite a senha de educador.');
+        return;
+      }
+      if (!verifyEducatorPassword(educatorPassInput)) {
+        setErrorMessage('Senha de educador incorreta! (Padrão: herdar)');
+        return;
+      }
       onTeacherLogin?.({
         isAuthenticated: true,
-        teacherName: artAuthorName.trim() || 'Professor(a) Herdar',
-        role: artAuthorGrade.trim() || 'Professor(a)',
+        teacherName: artAuthorName.trim() || 'Educador(a) Herdar',
+        role: artAuthorGrade.trim() || 'Educador(a)',
       });
     }
 
-    const authorNameFinal = artAuthorName.trim() || (isPublishingAsTeacher ? 'Professor(a)' : 'Aluno(a)');
-    const authorGradeFinal = artAuthorGrade.trim() || (isPublishingAsTeacher ? 'Professor(a)' : 'Aluno(a) Herdar');
+    const authorNameFinal = artAuthorName.trim() || (isEducator ? 'Educador(a)' : 'Educando(a)');
+    const authorGradeFinal = artAuthorGrade.trim() || (isEducator ? 'Educador(a)' : 'Educando(a) Herdar');
 
     const newArticle: Article = {
       id: `art-${Date.now()}`,
       title: artTitle.trim(),
-      subtitle: artSubtitle.trim() || (isPublishingAsTeacher ? 'Aviso da equipe de professores do Instituto Herdar.' : 'Publicação feita para o Jornal Herdar.'),
+      subtitle: artSubtitle.trim() || (isEducator ? 'Aviso da equipe de educadores do Instituto Herdar.' : 'Publicação de educandos para o Jornal Herdar.'),
       category: artCategory,
       authorName: authorNameFinal,
       authorGrade: authorGradeFinal,
-      authorRole: isPublishingAsTeacher ? 'professor' : 'aluno',
+      authorRole: isEducator ? 'educador' : 'educando',
       date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }),
       timestamp: Date.now(),
       readTime: `${Math.max(1, Math.round(artContent.split(/\s+/).length / 140))} min`,
@@ -171,7 +185,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
       tags: artTags.split(',').map(t => t.trim()).filter(Boolean),
       isLeadStory: artIsLead,
       isApproved: true,
-      isPinned: isPublishingAsTeacher,
+      isPinned: isEducator,
       likes: 1,
       views: 1,
     };
@@ -199,8 +213,8 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
       id: `ph-${Date.now()}`,
       title: photoTitle.trim(),
       imageUrl: photoUrl,
-      photographer: photoAuthor.trim() || (authorType === 'professor' ? 'Professor(a)' : 'Aluno(a)'),
-      grade: photoGrade.trim() || (authorType === 'professor' ? 'Professor(a)' : 'Aluno(a)'),
+      photographer: photoAuthor.trim() || (authorType === 'educador' ? 'Educador(a)' : 'Educando(a)'),
+      grade: photoGrade.trim() || (authorType === 'educador' ? 'Educador(a)' : 'Educando(a)'),
       eventTag: photoTag.trim() || 'Escola',
       date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }),
       likes: 1,
@@ -220,7 +234,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
       return;
     }
 
-    const isTeacher = authorType === 'professor' || teacherAuth.isAuthenticated;
+    const isEducator = authorType === 'educador' || teacherAuth.isAuthenticated;
 
     const newEvent: SchoolEvent = {
       id: `ev-${Date.now()}`,
@@ -230,9 +244,9 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
       location: evLocation.trim(),
       category: evCategory,
       description: evDescription.trim() || 'Evento cadastrado no Jornal Herdar.',
-      organizer: evOrganizer.trim() || (isTeacher ? 'Professores' : 'Alunos'),
+      organizer: evOrganizer.trim() || (isEducator ? 'Educadores' : 'Educandos'),
       organizerRole: evRole,
-      isOfficial: isTeacher,
+      isOfficial: isEducator,
       attendingCount: 1,
     };
 
@@ -242,24 +256,24 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-950/80 backdrop-blur-xs">
-      <div className="bg-[#FAF8F5] text-stone-900 border border-stone-300 w-full max-w-4xl h-[92vh] shadow-2xl flex flex-col overflow-hidden">
+      <div className="bg-[#FAF8F5] dark:bg-[#141311] text-stone-900 dark:text-stone-100 border border-stone-300 dark:border-stone-800 w-full max-w-4xl h-[92vh] shadow-2xl flex flex-col overflow-hidden transition-colors">
         
         {/* Cabeçalho */}
-        <div className="p-4 sm:p-6 border-b border-stone-200 bg-white flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1A1916] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-stone-900 text-stone-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-stone-900 dark:bg-stone-800 text-stone-100 flex items-center justify-center">
               <PenTool className="w-5 h-5 text-amber-300" />
             </div>
             <div>
-              <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Nova Publicação</span>
-              <h2 className="text-xl sm:text-2xl font-serif-title font-semibold text-stone-900">
+              <span className="text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">Nova Publicação</span>
+              <h2 className="text-xl sm:text-2xl font-serif-title font-semibold text-stone-900 dark:text-stone-100">
                 Publicar no Jornal Herdar
               </h2>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-stone-500 hover:text-stone-900 transition-colors"
+            className="p-1.5 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
             aria-label="Fechar"
           >
             <X className="w-6 h-6" />
@@ -267,14 +281,14 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
         </div>
 
         {/* Abas */}
-        <div className="px-6 border-b border-stone-200 bg-stone-100 flex items-center justify-between">
+        <div className="px-6 border-b border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-900 flex items-center justify-between">
           <div className="flex items-center gap-1 overflow-x-auto text-xs font-medium">
             <button
               onClick={() => { setActiveTab('article'); setPreviewMode(false); }}
               className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
                 activeTab === 'article'
-                  ? 'border-stone-900 text-stone-900 font-semibold bg-white'
-                  : 'border-transparent text-stone-600 hover:text-stone-900'
+                  ? 'border-stone-900 dark:border-amber-400 text-stone-900 dark:text-stone-100 font-semibold bg-white dark:bg-[#1A1916]'
+                  : 'border-transparent text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
               }`}
             >
               <FileText className="w-4 h-4" />
@@ -285,8 +299,8 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
               onClick={() => { setActiveTab('photo'); setPreviewMode(false); }}
               className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
                 activeTab === 'photo'
-                  ? 'border-stone-900 text-stone-900 font-semibold bg-white'
-                  : 'border-transparent text-stone-600 hover:text-stone-900'
+                  ? 'border-stone-900 dark:border-amber-400 text-stone-900 dark:text-stone-100 font-semibold bg-white dark:bg-[#1A1916]'
+                  : 'border-transparent text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
               }`}
             >
               <Camera className="w-4 h-4" />
@@ -297,8 +311,8 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
               onClick={() => { setActiveTab('event'); setPreviewMode(false); }}
               className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
                 activeTab === 'event'
-                  ? 'border-stone-900 text-stone-900 font-semibold bg-white'
-                  : 'border-transparent text-stone-600 hover:text-stone-900'
+                  ? 'border-stone-900 dark:border-amber-400 text-stone-900 dark:text-stone-100 font-semibold bg-white dark:bg-[#1A1916]'
+                  : 'border-transparent text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
               }`}
             >
               <CalendarPlus className="w-4 h-4" />
@@ -310,7 +324,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
             <button
               type="button"
               onClick={() => setPreviewMode(!previewMode)}
-              className="text-xs px-3 py-1.5 border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 flex items-center gap-1.5 cursor-pointer"
+              className="text-xs px-3 py-1.5 border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center gap-1.5 cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5" />
               <span>{previewMode ? 'Voltar e Editar' : 'Ver como vai ficar'}</span>
@@ -322,7 +336,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           
           {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
@@ -331,51 +345,51 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
           {/* ABA 1: NOTÍCIA */}
           {activeTab === 'article' && (
             previewMode ? (
-              <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 border border-stone-200">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 font-medium">
-                  <span>{artCategory}</span>
-                  {authorType === 'professor' && (
-                    <span className="text-amber-800 font-semibold flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Publicado por Professor
+              <div className="max-w-2xl mx-auto bg-white dark:bg-[#1A1916] p-6 sm:p-8 border border-stone-200 dark:border-stone-800">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-medium">
+                  <span className="text-amber-800 dark:text-amber-400">{artCategory}</span>
+                  {authorType === 'educador' && (
+                    <span className="text-amber-800 dark:text-amber-400 font-semibold flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Publicado por Educador(a)
                     </span>
                   )}
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-serif-title font-semibold text-stone-900 mt-2 mb-3">
+                <h1 className="text-2xl sm:text-3xl font-serif-title font-semibold text-stone-900 dark:text-stone-100 mt-2 mb-3">
                   {artTitle || 'Título da notícia'}
                 </h1>
-                <p className="text-sm text-stone-600 mb-4 italic">
+                <p className="text-sm text-stone-600 dark:text-stone-300 mb-4 italic">
                   {artSubtitle || 'Resumo da notícia.'}
                 </p>
-                <div className="text-xs text-stone-500 pb-4 mb-4 border-b border-stone-200">
-                  Por {artAuthorName || (authorType === 'professor' ? 'Professor' : 'Aluno')} ({artAuthorGrade || 'Instituto Herdar'}) · Hoje
+                <div className="text-xs text-stone-500 dark:text-stone-400 pb-4 mb-4 border-b border-stone-200 dark:border-stone-800">
+                  Por {artAuthorName || (authorType === 'educador' ? 'Educador' : 'Educando')} ({artAuthorGrade || 'Instituto Herdar'}) · Hoje
                 </div>
                 {artCoverImage && (
                   <div className="mb-6">
                     <img
                       src={artCoverImage}
                       alt="Capa"
-                      className="w-full max-h-72 object-cover border border-stone-200"
+                      className="w-full max-h-72 object-cover border border-stone-200 dark:border-stone-800"
                     />
                     {artCaption && (
-                      <p className="text-xs font-reading text-stone-500 italic mt-1.5">{artCaption}</p>
+                      <p className="text-xs font-reading text-stone-500 dark:text-stone-400 italic mt-1.5">{artCaption}</p>
                     )}
                   </div>
                 )}
                 {artPullQuote && (
-                  <blockquote className="my-6 p-4 border-l-2 border-stone-800 bg-stone-50 text-stone-800 font-serif-title text-lg italic">
+                  <blockquote className="my-6 p-4 border-l-2 border-stone-800 dark:border-amber-400 bg-stone-50 dark:bg-[#22201D] text-stone-800 dark:text-stone-200 font-serif-title text-lg italic">
                     "{artPullQuote}"
                   </blockquote>
                 )}
-                <div className="text-stone-800 font-reading text-base leading-relaxed whitespace-pre-line">
+                <div className="text-stone-800 dark:text-stone-200 font-reading text-base leading-relaxed whitespace-pre-line">
                   {artContent || 'O texto da notícia vai aparecer aqui.'}
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmitArticle} className="max-w-3xl mx-auto space-y-5 bg-white p-6 sm:p-8 border border-stone-200">
+              <form onSubmit={handleSubmitArticle} className="max-w-3xl mx-auto space-y-5 bg-white dark:bg-[#1A1916] p-6 sm:p-8 border border-stone-200 dark:border-stone-800">
                 
-                {/* Quem está postando */}
-                <div className="p-4 bg-stone-50 border border-stone-200">
-                  <span className="block text-xs uppercase tracking-wider text-stone-700 font-bold mb-2">
+                {/* Quem está postando: Educando ou Educador */}
+                <div className="p-4 bg-stone-50 dark:bg-[#22201D] border border-stone-200 dark:border-stone-800">
+                  <span className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-bold mb-2">
                     Quem está publicando?
                   </span>
                   
@@ -383,7 +397,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        setAuthorType('aluno');
+                        setAuthorType('educando');
                         setArtCategory('Notícias da Escola');
                         if (!teacherAuth.isAuthenticated) {
                           setArtAuthorName('');
@@ -391,73 +405,90 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                         }
                       }}
                       className={`p-3 border text-left transition-colors cursor-pointer flex items-center justify-between ${
-                        authorType === 'aluno'
-                          ? 'bg-white border-stone-900 ring-1 ring-stone-900 shadow-xs'
-                          : 'bg-stone-100 border-stone-300 hover:bg-white text-stone-600'
+                        authorType === 'educando'
+                          ? 'bg-white dark:bg-stone-900 border-stone-900 dark:border-amber-400 ring-1 ring-stone-900 dark:ring-amber-400 shadow-xs'
+                          : 'bg-stone-100 dark:bg-stone-800/60 border-stone-300 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400'
                       }`}
                     >
                       <div>
-                        <span className="font-semibold text-xs text-stone-900 block">Aluno(a)</span>
-                        <span className="text-[11px] text-stone-500">Notícias, trabalhos e novidades dos alunos</span>
+                        <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 block">Educando(a)</span>
+                        <span className="text-[11px] text-stone-500 dark:text-stone-400">Notícias, projetos e novidades dos educandos</span>
                       </div>
-                      {authorType === 'aluno' && <Check className="w-4 h-4 text-stone-900" />}
+                      {authorType === 'educando' && <Check className="w-4 h-4 text-stone-900 dark:text-amber-400" />}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => {
-                        setAuthorType('professor');
+                        setAuthorType('educador');
                         setArtCategory('Comunicados');
                         if (teacherAuth.isAuthenticated) {
                           setArtAuthorName(teacherAuth.teacherName);
                           setArtAuthorGrade(teacherAuth.role);
                         } else if (!artAuthorName) {
-                          setArtAuthorName('Prof. ');
-                          setArtAuthorGrade('Professor(a)');
+                          setArtAuthorName('Educador(a) ');
+                          setArtAuthorGrade('Educador(a)');
                         }
                       }}
                       className={`p-3 border text-left transition-colors cursor-pointer flex items-center justify-between ${
-                        authorType === 'professor'
-                          ? 'bg-white border-stone-900 ring-1 ring-stone-900 shadow-xs'
-                          : 'bg-stone-100 border-stone-300 hover:bg-white text-stone-600'
+                        authorType === 'educador'
+                          ? 'bg-white dark:bg-stone-900 border-stone-900 dark:border-amber-400 ring-1 ring-stone-900 dark:ring-amber-400 shadow-xs'
+                          : 'bg-stone-100 dark:bg-stone-800/60 border-stone-300 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400'
                       }`}
                     >
                       <div>
-                        <span className="font-semibold text-xs text-amber-900 flex items-center gap-1">
+                        <span className="font-semibold text-xs text-amber-900 dark:text-amber-400 flex items-center gap-1">
                           <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>Professor(a) / Escola</span>
+                          <span>Educador(a) / Escola</span>
                         </span>
-                        <span className="text-[11px] text-stone-500">Avisos e comunicados da escola</span>
+                        <span className="text-[11px] text-stone-500 dark:text-stone-400">Avisos e comunicados oficiais</span>
                       </div>
-                      {authorType === 'professor' && <Check className="w-4 h-4 text-stone-900" />}
+                      {authorType === 'educador' && <Check className="w-4 h-4 text-stone-900 dark:text-amber-400" />}
                     </button>
                   </div>
+
+                  {/* Senha exigida quando seleciona Educador e não está logado */}
+                  {authorType === 'educador' && !teacherAuth.isAuthenticated && (
+                    <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80">
+                      <label className="block text-xs font-semibold text-amber-900 dark:text-amber-300 mb-1 flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Digite a Senha de Educador para publicar como Educador:</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={educatorPassInput}
+                        onChange={(e) => setEducatorPassInput(e.target.value)}
+                        placeholder="Senha de educador (padrão: herdar)"
+                        className="w-full px-3 py-1.5 text-xs bg-white dark:bg-[#1A1916] border border-amber-300 dark:border-amber-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                      {authorType === 'professor' ? 'Seu Nome de Professor(a) *' : 'Seu Nome de Aluno(a) *'}
+                    <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
+                      {authorType === 'educador' ? 'Seu Nome de Educador(a) *' : 'Seu Nome de Educando(a) *'}
                     </label>
                     <input
                       type="text"
                       value={artAuthorName}
                       onChange={(e) => setArtAuthorName(e.target.value)}
-                      placeholder={authorType === 'professor' ? "Ex: Prof. Thiago" : "Ex: Mariana Silva"}
-                      className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                      placeholder={authorType === 'educador' ? "Ex: Educador Thiago" : "Ex: Mariana Silva"}
+                      className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                      {authorType === 'professor' ? 'Sua Matéria ou Cargo *' : 'Sua Turma *'}
+                    <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
+                      {authorType === 'educador' ? 'Sua Matéria ou Função *' : 'Sua Turma *'}
                     </label>
                     <input
                       type="text"
                       value={artAuthorGrade}
                       onChange={(e) => setArtAuthorGrade(e.target.value)}
-                      placeholder={authorType === 'professor' ? "Ex: História / Coordenação" : "Ex: 2º Ano A"}
-                      className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                      placeholder={authorType === 'educador' ? "Ex: História / Coordenação" : "Ex: 2º Ano A"}
+                      className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                       required
                     />
                   </div>
@@ -465,13 +496,13 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                    <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                       Assunto da Notícia
                     </label>
                     <select
                       value={artCategory}
                       onChange={(e) => setArtCategory(e.target.value as ArticleCategory)}
-                      className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                      className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     >
                       <option value="Notícias da Escola">Notícias da Escola</option>
                       <option value="Projetos & Aulas">Projetos & Aulas</option>
@@ -480,7 +511,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                    <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                       Palavras-chave
                     </label>
                     <input
@@ -488,13 +519,13 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                       value={artTags}
                       onChange={(e) => setArtTags(e.target.value)}
                       placeholder="Ex: Laboratório, Feira, Prova"
-                      className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                      className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Título da Notícia *
                   </label>
                   <input
@@ -502,13 +533,13 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     value={artTitle}
                     onChange={(e) => setArtTitle(e.target.value)}
                     placeholder="Escreva um título chamativo..."
-                    className="w-full px-3 py-2 text-base font-serif-title font-semibold bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    className="w-full px-3 py-2 text-base font-serif-title font-semibold bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Resumo Rápido
                   </label>
                   <input
@@ -516,23 +547,23 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     value={artSubtitle}
                     onChange={(e) => setArtSubtitle(e.target.value)}
                     placeholder="Uma frase explicando sobre o que é a notícia..."
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   />
                 </div>
 
                 {/* Foto da Notícia */}
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Foto de Capa (Opcional)
                   </label>
                   
                   {artCoverImage && (
-                    <div className="mb-2 relative aspect-video max-h-48 border border-stone-300 bg-stone-100 overflow-hidden">
+                    <div className="mb-2 relative aspect-video max-h-48 border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-900 overflow-hidden">
                       <img src={artCoverImage} alt="Capa" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setArtCoverImage('')}
-                        className="absolute top-2 right-2 bg-stone-900/80 text-white p-1 text-xs"
+                        className="absolute top-2 right-2 bg-stone-900/80 text-white p-1 text-xs cursor-pointer"
                       >
                         Remover foto
                       </button>
@@ -550,12 +581,12 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1.5 border border-stone-300 bg-stone-100 hover:bg-stone-200 text-xs text-stone-800 flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-xs text-stone-800 dark:text-stone-200 flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5" />
                       <span>{artCoverImage ? 'Trocar Foto' : 'Escolher Foto do Celular ou Computador'}</span>
                     </button>
-                    <span className="text-xs text-stone-500">ou coloque link direto:</span>
+                    <span className="text-xs text-stone-500 dark:text-stone-400">ou coloque link direto:</span>
                   </div>
 
                   <input
@@ -563,7 +594,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     value={artCoverImage.startsWith('data:') ? '' : artCoverImage}
                     onChange={(e) => setArtCoverImage(e.target.value)}
                     placeholder="https://exemplo.com/foto.jpg"
-                    className="w-full mt-2 px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 focus:border-stone-800 focus:outline-hidden"
+                    className="w-full mt-2 px-3 py-1.5 text-xs bg-stone-50 dark:bg-[#22201D] border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   />
 
                   {artCoverImage && (
@@ -571,27 +602,27 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                       type="text"
                       value={artCaption}
                       onChange={(e) => setArtCaption(e.target.value)}
-                      placeholder="Legenda da foto (Ex: Alunos no laboratório)"
-                      className="w-full mt-2 px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 focus:border-stone-800 focus:outline-hidden"
+                      placeholder="Legenda da foto"
+                      className="w-full mt-2 px-3 py-1.5 text-xs bg-stone-50 dark:bg-[#22201D] border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     />
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Frase Marcante em Destaque (Opcional)
                   </label>
                   <input
                     type="text"
                     value={artPullQuote}
                     onChange={(e) => setArtPullQuote(e.target.value)}
-                    placeholder="Uma frase dita por alguém ou destaque..."
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden italic"
+                    placeholder="Uma frase marcante..."
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden italic"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Texto Completo da Notícia *
                   </label>
                   <textarea
@@ -599,32 +630,32 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     value={artContent}
                     onChange={(e) => setArtContent(e.target.value)}
                     placeholder="Escreva tudo o que aconteceu aqui..."
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden font-reading text-base leading-relaxed"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden font-reading text-base leading-relaxed"
                     required
                   />
                 </div>
 
                 {/* Destacar na capa */}
-                <div className="flex items-center gap-2 p-3 bg-stone-50 border border-stone-200">
+                <div className="flex items-center gap-2 p-3 bg-stone-50 dark:bg-[#22201D] border border-stone-200 dark:border-stone-800">
                   <input
                     type="checkbox"
                     id="setLead"
                     checked={artIsLead}
                     onChange={(e) => setArtIsLead(e.target.checked)}
-                    className="w-4 h-4 text-stone-900 border-stone-300"
+                    className="w-4 h-4 text-stone-900 dark:text-amber-400 border-stone-300"
                   />
-                  <label htmlFor="setLead" className="text-xs text-stone-700 font-medium cursor-pointer">
+                  <label htmlFor="setLead" className="text-xs text-stone-700 dark:text-stone-300 font-medium cursor-pointer">
                     Colocar em destaque principal na capa do jornal
                   </label>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between border-t border-stone-200">
-                  <span className="text-xs text-stone-500">
-                    Aparece na hora para todos os computadores e celulares.
+                <div className="pt-2 flex items-center justify-between border-t border-stone-200 dark:border-stone-800">
+                  <span className="text-xs text-stone-500 dark:text-stone-400">
+                    Aparece na hora para toda a comunidade.
                   </span>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
+                    className="px-6 py-2.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
                   >
                     Publicar Notícia
                   </button>
@@ -635,58 +666,58 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
           {/* ABA 2: FOTOS */}
           {activeTab === 'photo' && (
-            <form onSubmit={handleSubmitPhoto} className="max-w-xl mx-auto space-y-4 bg-white p-6 sm:p-8 border border-stone-200">
+            <form onSubmit={handleSubmitPhoto} className="max-w-xl mx-auto space-y-4 bg-white dark:bg-[#1A1916] p-6 sm:p-8 border border-stone-200 dark:border-stone-800">
               <div className="mb-4">
-                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Mural de Fotos</span>
-                <h3 className="text-xl font-serif-title font-semibold text-stone-900 mt-1">
+                <span className="text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">Mural de Fotos</span>
+                <h3 className="text-xl font-serif-title font-semibold text-stone-900 dark:text-stone-100 mt-1">
                   Enviar Foto para o Jornal
                 </h3>
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                   Legenda da Foto *
                 </label>
                 <input
                   type="text"
                   value={photoTitle}
                   onChange={(e) => setPhotoTitle(e.target.value)}
-                  placeholder="Ex: Alunos durante o projeto de ciências"
-                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                  placeholder="Ex: Educandos durante a apresentação do projeto"
+                  className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Quem tirou a foto? *
                   </label>
                   <input
                     type="text"
                     value={photoAuthor}
                     onChange={(e) => setPhotoAuthor(e.target.value)}
-                    placeholder="Ex: Beatriz / Prof. Thiago"
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    placeholder="Ex: Beatriz / Educador Thiago"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Turma ou Matéria
                   </label>
                   <input
                     type="text"
                     value={photoGrade}
                     onChange={(e) => setPhotoGrade(e.target.value)}
-                    placeholder="Ex: 2º Ano ou Professor"
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    placeholder="Ex: 2º Ano ou Educador"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                   Momento
                 </label>
                 <input
@@ -694,17 +725,17 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   value={photoTag}
                   onChange={(e) => setPhotoTag(e.target.value)}
                   placeholder="Ex: Dia a dia, Aula, Apresentação"
-                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                  className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                 />
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                   Foto *
                 </label>
                 
                 {photoUrl && (
-                  <div className="mb-3 aspect-video border border-stone-200 bg-stone-100 overflow-hidden relative">
+                  <div className="mb-3 aspect-video border border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-900 overflow-hidden relative">
                     <img src={photoUrl} alt="Prévia" className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -720,12 +751,12 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   <button
                     type="button"
                     onClick={() => photoFileInputRef.current?.click()}
-                    className="px-3 py-1.5 border border-stone-300 bg-stone-100 hover:bg-stone-200 text-xs text-stone-800 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-xs text-stone-800 dark:text-stone-200 flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Escolher Foto do Celular ou Computador</span>
                   </button>
-                  <span className="text-xs text-stone-500">ou use link:</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">ou link:</span>
                 </div>
                 
                 <input
@@ -733,14 +764,14 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   value={photoUrl.startsWith('data:') ? '' : photoUrl}
                   onChange={(e) => setPhotoUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full mt-2 px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 focus:border-stone-800 focus:outline-hidden"
+                  className="w-full mt-2 px-3 py-1.5 text-xs bg-stone-50 dark:bg-[#22201D] border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                 />
               </div>
 
               <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
+                  className="px-6 py-2.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
                 >
                   Colocar Foto no Mural
                 </button>
@@ -750,31 +781,31 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
           {/* ABA 3: EVENTO */}
           {activeTab === 'event' && (
-            <form onSubmit={handleSubmitEvent} className="max-w-xl mx-auto space-y-4 bg-white p-6 sm:p-8 border border-stone-200">
+            <form onSubmit={handleSubmitEvent} className="max-w-xl mx-auto space-y-4 bg-white dark:bg-[#1A1916] p-6 sm:p-8 border border-stone-200 dark:border-stone-800">
               <div className="mb-4">
-                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Calendário</span>
-                <h3 className="text-xl font-serif-title font-semibold text-stone-900 mt-1">
+                <span className="text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">Calendário</span>
+                <h3 className="text-xl font-serif-title font-semibold text-stone-900 dark:text-stone-100 mt-1">
                   Cadastrar Evento da Escola
                 </h3>
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                   Nome do Evento *
                 </label>
                 <input
                   type="text"
                   value={evTitle}
                   onChange={(e) => setEvTitle(e.target.value)}
-                  placeholder="Ex: Simulado Geral / Feira de Ciências"
-                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                  placeholder="Ex: Feira de Ciências / Apresentação de Projetos"
+                  className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Dia / Data *
                   </label>
                   <input
@@ -782,12 +813,12 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     value={evDate}
                     onChange={(e) => setEvDate(e.target.value)}
                     placeholder="Ex: 15 de Outubro"
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Horário
                   </label>
                   <input
@@ -795,33 +826,33 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     value={evTime}
                     onChange={(e) => setEvTime(e.target.value)}
                     placeholder="Ex: 14h às 16h"
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Local na Escola *
                   </label>
                   <input
                     type="text"
                     value={evLocation}
                     onChange={(e) => setEvLocation(e.target.value)}
-                    placeholder="Ex: Pátio / Quadra / Auditório"
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    placeholder="Ex: Pátio / Auditório / Sala de Aula"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Tipo de Evento
                   </label>
                   <select
                     value={evCategory}
                     onChange={(e) => setEvCategory(e.target.value as any)}
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   >
                     <option value="Aulas & Projetos">Aulas & Projetos</option>
                     <option value="Festas & Cultura">Festas & Cultura</option>
@@ -833,36 +864,36 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Quem está organizando? *
                   </label>
                   <input
                     type="text"
                     value={evOrganizer}
                     onChange={(e) => setEvOrganizer(e.target.value)}
-                    placeholder="Ex: Turma do 3º Ano / Professores"
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    placeholder="Ex: Educandos do 2º Ano / Educadores"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                     Grupo
                   </label>
                   <select
                     value={evRole}
                     onChange={(e) => setEvRole(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                    className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                   >
-                    <option value="Alunos">Alunos</option>
-                    <option value="Professores">Professores</option>
+                    <option value="Educandos">Educandos</option>
+                    <option value="Educadores">Educadores</option>
                     <option value="Escola">Direção da Escola</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 dark:text-stone-300 font-semibold mb-1">
                   Detalhes do Evento
                 </label>
                 <textarea
@@ -870,14 +901,14 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   value={evDescription}
                   onChange={(e) => setEvDescription(e.target.value)}
                   placeholder="Explique o que vai acontecer..."
-                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
+                  className="w-full px-3 py-2 text-sm bg-stone-50 dark:bg-[#22201D] border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-100 focus:border-stone-800 dark:focus:border-amber-400 focus:outline-hidden"
                 />
               </div>
 
               <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
+                  className="px-6 py-2.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
                 >
                   Colocar no Calendário
                 </button>

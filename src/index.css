@@ -1,10 +1,39 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
+  :root {
+    --paper-bg: #FAF7F2;
+    --paper-card: #FFFFFF;
+    --paper-card-subtle: #F5F1E9;
+    --paper-border: #E5E0D5;
+    --paper-border-strong: #1C1917;
+    --ink-primary: #1C1917;
+    --ink-secondary: #44403C;
+    --ink-muted: #78716C;
+    --accent-gold: #B45309;
+    --accent-emerald: #047857;
+  }
+
+  .dark {
+    --paper-bg: #121110;
+    --paper-card: #1A1916;
+    --paper-card-subtle: #22201D;
+    --paper-border: #2E2A25;
+    --paper-border-strong: #4E483F;
+    --ink-primary: #F5EFEB;
+    --ink-secondary: #D4CDC3;
+    --ink-muted: #A39B8F;
+    --accent-gold: #F59E0B;
+    --accent-emerald: #10B981;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    color: #1C1917;
-    background-color: #FAF7F2;
+    color: var(--ink-primary);
+    background-color: var(--paper-bg);
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
@@ -14,6 +43,25 @@
 
 .font-reading {
   font-family: 'Newsreader', Georgia, serif;
+}
+
+/* Custom scrollbars for newspaper modal reading */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #A8A29E;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #44403C;
 }
 
 /* Print styling for newspaper edition printing */

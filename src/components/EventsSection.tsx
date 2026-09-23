@@ -17,9 +17,11 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
   onToggleJoin,
   onOpenNewEvent,
   onDeleteEvent,
+  teacherAuth,
 }) => {
   const [filterCategory, setFilterCategory] = useState<string>('Todos');
 
+  const isEducator = teacherAuth?.isAuthenticated;
   const categories = ['Todos', 'Aulas & Projetos', 'Festas & Cultura', 'Esportes', 'Avisos & Reuniões'];
 
   const filteredEvents = filterCategory === 'Todos'
@@ -27,21 +29,21 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     : events.filter(e => e.category === filterCategory);
 
   return (
-    <section id="eventos" className="my-14 pt-10 border-t-2 border-stone-300">
+    <section id="eventos" className="my-14 pt-10 border-t-2 border-stone-300 dark:border-stone-800 transition-colors">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 font-semibold mb-1">
-            <Calendar className="w-3.5 h-3.5 text-stone-700" />
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold mb-1">
+            <Calendar className="w-3.5 h-3.5 text-stone-700 dark:text-amber-400" />
             <span>Calendário da Escola</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-serif-title font-bold text-stone-900">
+          <h2 className="text-2xl sm:text-3xl font-serif-title font-bold text-stone-900 dark:text-stone-100">
             Eventos e Datas Importantes
           </h2>
         </div>
 
         <button
           onClick={onOpenNewEvent}
-          className="px-4 py-2 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-xs"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Cadastrar Evento</span>
@@ -50,15 +52,15 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
       {/* Filtro simples */}
       {events.length > 0 && (
-        <div className="flex items-center gap-1 p-1 bg-stone-200/70 border border-stone-300 mb-8 overflow-x-auto">
+        <div className="flex items-center gap-1 p-1 bg-stone-200/70 dark:bg-stone-900 border border-stone-300 dark:border-stone-800 mb-8 overflow-x-auto">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                 filterCategory === cat
-                  ? 'bg-white text-stone-900 shadow-xs font-semibold'
-                  : 'text-stone-600 hover:text-stone-900'
+                  ? 'bg-white dark:bg-[#1A1916] text-stone-900 dark:text-stone-100 shadow-xs font-semibold'
+                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
               }`}
             >
               {cat}
@@ -68,17 +70,17 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       )}
 
       {events.length === 0 ? (
-        <div className="bg-white border border-stone-200 p-8 sm:p-12 text-center">
-          <Calendar className="w-10 h-10 text-stone-400 mx-auto mb-3" />
-          <h3 className="font-serif-title text-xl font-semibold text-stone-800 mb-2">
+        <div className="bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800 p-8 sm:p-12 text-center transition-colors">
+          <Calendar className="w-10 h-10 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
+          <h3 className="font-serif-title text-xl font-semibold text-stone-800 dark:text-stone-200 mb-2">
             Ainda não há eventos cadastrados
           </h3>
-          <p className="text-xs text-stone-500 max-w-md mx-auto mb-6">
-            Alunos e professores podem cadastrar datas de apresentações, provas, reuniões e eventos da escola.
+          <p className="text-xs text-stone-500 dark:text-stone-400 max-w-md mx-auto mb-6">
+            Educandos e educadores podem cadastrar datas de apresentações, aulas especiais, eventos e reuniões da escola.
           </p>
           <button
             onClick={onOpenNewEvent}
-            className="px-5 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
+            className="px-5 py-2.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
           >
             Cadastrar Primeiro Evento
           </button>
@@ -92,22 +94,23 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             return (
               <div 
                 key={ev.id}
-                className="bg-white border border-stone-200 p-6 flex flex-col justify-between hover:border-stone-400 transition-colors shadow-xs relative"
+                className="bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800 p-6 flex flex-col justify-between hover:border-stone-400 dark:hover:border-stone-600 transition-colors shadow-xs relative"
               >
                 <div>
-                  <div className="flex items-center justify-between text-xs text-stone-500 mb-3 pb-2 border-b border-stone-100">
-                    <span className="font-semibold text-stone-800">{ev.category}</span>
+                  <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 mb-3 pb-2 border-b border-stone-100 dark:border-stone-800">
+                    <span className="font-semibold text-stone-800 dark:text-amber-400">{ev.category}</span>
                     <div className="flex items-center gap-2">
                       {ev.isOfficial && (
-                        <span className="text-[11px] text-amber-900 bg-amber-50 px-1.5 py-0.5 border border-amber-200 font-medium">
+                        <span className="text-[11px] text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 border border-amber-200 dark:border-amber-800/80 font-medium">
                           Aviso da Escola
                         </span>
                       )}
-                      {onDeleteEvent && (
+                      {/* Botão de excluir visível SOMENTE para educadores autenticados */}
+                      {isEducator && onDeleteEvent && (
                         <button
                           onClick={() => onDeleteEvent(ev.id)}
-                          className="text-stone-400 hover:text-red-700 p-1"
-                          title="Excluir evento"
+                          className="text-stone-400 hover:text-red-700 dark:hover:text-red-400 p-1 cursor-pointer"
+                          title="Excluir evento (Modo Educador)"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -115,45 +118,45 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     </div>
                   </div>
 
-                  <h3 className="font-serif-title font-semibold text-lg text-stone-900 mb-3 leading-snug">
+                  <h3 className="font-serif-title font-semibold text-lg text-stone-900 dark:text-stone-100 mb-3 leading-snug">
                     {ev.title}
                   </h3>
 
-                  <p className="text-xs text-stone-600 leading-relaxed mb-6 font-reading text-sm">
+                  <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed mb-6 font-reading text-sm">
                     {ev.description}
                   </p>
 
-                  <div className="space-y-2 text-xs text-stone-600 mb-6 bg-stone-50 p-3 border border-stone-100">
+                  <div className="space-y-2 text-xs text-stone-600 dark:text-stone-300 mb-6 bg-stone-50 dark:bg-[#22201D] p-3 border border-stone-100 dark:border-stone-800">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                      <span className="font-medium text-stone-900">{ev.date}</span>
+                      <Calendar className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
+                      <span className="font-medium text-stone-900 dark:text-stone-100">{ev.date}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                      <Clock className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
                       <span>{ev.time}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
                       <span>{ev.location}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Users className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                      <span>Por: <strong>{ev.organizer}</strong> ({ev.organizerRole})</span>
+                      <Users className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
+                      <span>Por: <strong className="text-stone-800 dark:text-stone-200">{ev.organizer}</strong> ({ev.organizerRole})</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-                  <span className="text-xs text-stone-500">
-                    <strong className="text-stone-900 tabular-nums">{totalAttending}</strong> pessoas vão
+                <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                  <span className="text-xs text-stone-500 dark:text-stone-400">
+                    <strong className="text-stone-900 dark:text-stone-100 tabular-nums">{totalAttending}</strong> pessoas vão
                   </span>
 
                   <button
                     onClick={() => onToggleJoin(ev.id)}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1.5 border cursor-pointer ${
                       isJoined
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                        : 'bg-white border-stone-300 text-stone-800 hover:bg-stone-100'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                        : 'bg-white dark:bg-stone-900 border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800'
                     }`}
                   >
                     {isJoined ? (

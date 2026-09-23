@@ -17,28 +17,30 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
   onTogglePhotoLike,
   onOpenNewPhoto,
   onDeletePhoto,
+  teacherAuth,
 }) => {
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoSubmission | null>(null);
+  const isEducator = teacherAuth?.isAuthenticated;
 
   return (
-    <section id="fotos" className="my-14 pt-10 border-t-2 border-stone-300">
+    <section id="fotos" className="my-14 pt-10 border-t-2 border-stone-300 dark:border-stone-800 transition-colors">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 font-semibold mb-1">
-            <Camera className="w-3.5 h-3.5 text-stone-700" />
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold mb-1">
+            <Camera className="w-3.5 h-3.5 text-stone-700 dark:text-amber-400" />
             <span>Mural de Fotos</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-serif-title font-bold text-stone-900">
+          <h2 className="text-2xl sm:text-3xl font-serif-title font-bold text-stone-900 dark:text-stone-100">
             Fotos da Escola
           </h2>
-          <p className="text-xs sm:text-sm text-stone-600 mt-1">
-            Fotos tiradas por alunos e professores no dia a dia do Instituto Herdar.
+          <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 mt-1">
+            Fotos tiradas por educandos e educadores no dia a dia do Instituto Herdar.
           </p>
         </div>
 
         <button
           onClick={onOpenNewPhoto}
-          className="px-4 py-2 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-xs"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Enviar Foto</span>
@@ -46,17 +48,17 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
       </div>
 
       {photos.length === 0 ? (
-        <div className="bg-white border border-stone-200 p-8 sm:p-12 text-center">
-          <Camera className="w-10 h-10 text-stone-400 mx-auto mb-3" />
-          <h3 className="font-serif-title text-xl font-semibold text-stone-800 mb-2">
+        <div className="bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800 p-8 sm:p-12 text-center transition-colors">
+          <Camera className="w-10 h-10 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
+          <h3 className="font-serif-title text-xl font-semibold text-stone-800 dark:text-stone-200 mb-2">
             Ainda não há fotos no mural
           </h3>
-          <p className="text-xs text-stone-500 max-w-md mx-auto mb-6">
-            Envie fotos de trabalhos, aulas, momentos no pátio e projetos no Instituto Herdar.
+          <p className="text-xs text-stone-500 dark:text-stone-400 max-w-md mx-auto mb-6">
+            Envie fotos de trabalhos, projetos, aulas e momentos especiais no Instituto Herdar.
           </p>
           <button
             onClick={onOpenNewPhoto}
-            className="px-5 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
+            className="px-5 py-2.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-950 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
           >
             Enviar Primeira Foto
           </button>
@@ -70,10 +72,10 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
             return (
               <div 
                 key={photo.id}
-                className="bg-white border border-stone-200 group overflow-hidden shadow-xs hover:border-stone-400 transition-all flex flex-col justify-between"
+                className="bg-white dark:bg-[#1A1916] border border-stone-200 dark:border-stone-800 group overflow-hidden shadow-xs hover:border-stone-400 dark:hover:border-stone-600 transition-all flex flex-col justify-between"
               >
                 <div 
-                  className="relative aspect-4/3 overflow-hidden bg-stone-100 cursor-pointer"
+                  className="relative aspect-4/3 overflow-hidden bg-stone-100 dark:bg-stone-900 cursor-pointer"
                   onClick={() => setSelectedPhoto(photo)}
                 >
                   <img
@@ -93,21 +95,21 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
                 </div>
 
                 <div className="p-4 flex-1 flex flex-col justify-between">
-                  <p className="font-serif-title font-semibold text-stone-900 text-sm mb-3 line-clamp-2">
+                  <p className="font-serif-title font-semibold text-stone-900 dark:text-stone-100 text-sm mb-3 line-clamp-2">
                     {photo.title}
                   </p>
 
-                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500">
+                  <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
                     <div className="truncate pr-2">
-                      <span className="font-medium text-stone-800">{photo.photographer}</span>
-                      <span className="text-stone-400 block text-[11px]">{photo.grade}</span>
+                      <span className="font-medium text-stone-800 dark:text-stone-200">{photo.photographer}</span>
+                      <span className="text-stone-400 dark:text-stone-500 block text-[11px]">{photo.grade}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onTogglePhotoLike(photo.id)}
                         className={`flex items-center gap-1 transition-colors p-1 ${
-                          isLiked ? 'text-rose-600 font-medium' : 'text-stone-400 hover:text-stone-700'
+                          isLiked ? 'text-rose-600 dark:text-rose-400 font-medium' : 'text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
                         }`}
                         title="Curtir foto"
                       >
@@ -115,11 +117,12 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
                         <span className="tabular-nums text-xs">{totalLikes}</span>
                       </button>
 
-                      {onDeletePhoto && (
+                      {/* Excluir foto visível SOMENTE para educadores autenticados */}
+                      {isEducator && onDeletePhoto && (
                         <button
                           onClick={() => onDeletePhoto(photo.id)}
-                          className="p-1 text-stone-400 hover:text-red-700 transition-colors"
-                          title="Excluir foto"
+                          className="p-1 text-stone-400 hover:text-red-700 dark:hover:text-red-400 transition-colors cursor-pointer"
+                          title="Excluir foto (Modo Educador)"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -141,11 +144,11 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="max-w-4xl w-full bg-[#FAF8F5] border border-stone-400 overflow-hidden shadow-2xl relative"
+            className="max-w-4xl w-full bg-[#FAF8F5] dark:bg-[#1A1916] border border-stone-400 dark:border-stone-700 overflow-hidden shadow-2xl relative"
           >
             <button
               onClick={() => setSelectedPhoto(null)}
-              className="absolute top-3 right-3 p-1.5 bg-stone-900/80 text-white hover:bg-stone-900 transition-colors z-10"
+              className="absolute top-3 right-3 p-1.5 bg-stone-900/80 text-white hover:bg-stone-900 transition-colors z-10 cursor-pointer"
               aria-label="Fechar"
             >
               <X className="w-5 h-5" />
@@ -160,16 +163,16 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
               />
             </div>
 
-            <div className="p-6 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-6 bg-white dark:bg-[#1A1916] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">
+                <span className="text-xs uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">
                   {selectedPhoto.eventTag} · {selectedPhoto.date}
                 </span>
-                <h3 className="font-serif-title text-xl font-bold text-stone-900 mt-1">
+                <h3 className="font-serif-title text-xl font-bold text-stone-900 dark:text-stone-100 mt-1">
                   {selectedPhoto.title}
                 </h3>
-                <p className="text-xs text-stone-600 mt-0.5">
-                  Foto por <strong>{selectedPhoto.photographer}</strong> ({selectedPhoto.grade})
+                <p className="text-xs text-stone-600 dark:text-stone-300 mt-0.5">
+                  Foto por <strong className="text-stone-900 dark:text-stone-100">{selectedPhoto.photographer}</strong> ({selectedPhoto.grade})
                 </p>
               </div>
 
@@ -178,21 +181,22 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
                   onClick={() => onTogglePhotoLike(selectedPhoto.id)}
                   className={`px-4 py-2 border flex items-center gap-2 text-xs font-semibold cursor-pointer ${
                     likedPhotos.includes(selectedPhoto.id)
-                      ? 'bg-rose-50 border-rose-300 text-rose-700'
-                      : 'bg-white border-stone-300 text-stone-800 hover:bg-stone-50'
+                      ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900/60 text-rose-700 dark:text-rose-400'
+                      : 'bg-white dark:bg-stone-900 border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800'
                   }`}
                 >
                   <Heart className={`w-4 h-4 ${likedPhotos.includes(selectedPhoto.id) ? 'fill-current' : ''}`} />
                   <span>{selectedPhoto.likes + (likedPhotos.includes(selectedPhoto.id) ? 1 : 0)} Curtidas</span>
                 </button>
 
-                {onDeletePhoto && (
+                {/* Excluir foto ampliada SOMENTE para educadores */}
+                {isEducator && onDeletePhoto && (
                   <button
                     onClick={() => {
                       onDeletePhoto(selectedPhoto.id);
                       setSelectedPhoto(null);
                     }}
-                    className="px-3 py-2 border border-red-200 text-red-700 hover:bg-red-50 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-2 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                     <span>Excluir</span>
