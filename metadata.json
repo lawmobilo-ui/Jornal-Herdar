@@ -1,0 +1,6 @@
+{
+  "name": "Jornal Herdar",
+  "description": "O jornal oficial da comunidade escolar do Instituto Herdar. Artigos de alunos e professores, fotos e eventos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
