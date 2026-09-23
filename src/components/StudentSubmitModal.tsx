@@ -9,12 +9,9 @@ import {
   Eye, 
   FileText, 
   ShieldCheck, 
-  Lock, 
-  AlertCircle,
-  Star
+  AlertCircle 
 } from 'lucide-react';
 import { Article, ArticleCategory, SchoolEvent, PhotoSubmission, TeacherAuth } from '../types/newspaper';
-import { getTeacherSecretKey } from '../utils/storage';
 
 interface StudentSubmitModalProps {
   isOpen: boolean;
@@ -41,27 +38,29 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
   const [previewMode, setPreviewMode] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   
-  // Author Type: Student vs Teacher
+  // Tipo de quem publica: Aluno ou Professor
   const [authorType, setAuthorType] = useState<'aluno' | 'professor'>(
     teacherAuth.isAuthenticated ? 'professor' : 'aluno'
   );
-  const [enteredTeacherKey, setEnteredTeacherKey] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync authorType when modal opens or teacherAuth changes
   useEffect(() => {
     if (teacherAuth.isAuthenticated) {
       setAuthorType('professor');
+      if (teacherAuth.teacherName) {
+        setArtAuthorName(teacherAuth.teacherName);
+        setArtAuthorGrade(teacherAuth.role);
+      }
     }
-  }, [teacherAuth.isAuthenticated, isOpen]);
+  }, [teacherAuth.isAuthenticated, teacherAuth.teacherName, teacherAuth.role, isOpen]);
 
-  // Article Form State
+  // Form de Notícia
   const [artTitle, setArtTitle] = useState('');
   const [artSubtitle, setArtSubtitle] = useState('');
   const [artCategory, setArtCategory] = useState<ArticleCategory>(
-    teacherAuth.isAuthenticated ? 'Comunicado Oficial' : 'Vida Escolar'
+    teacherAuth.isAuthenticated ? 'Comunicados' : 'Notícias da Escola'
   );
   const [artAuthorName, setArtAuthorName] = useState(
     teacherAuth.isAuthenticated ? teacherAuth.teacherName : ''
@@ -73,10 +72,10 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
   const [artCaption, setArtCaption] = useState('');
   const [artPullQuote, setArtPullQuote] = useState('');
   const [artContent, setArtContent] = useState('');
-  const [artTags, setArtTags] = useState('Jornal Herdar, Instituto Herdar');
+  const [artTags, setArtTags] = useState('Escola, Instituto Herdar');
   const [artIsLead, setArtIsLead] = useState(false);
 
-  // Photo Form State
+  // Form de Foto
   const [photoTitle, setPhotoTitle] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string>('');
   const [photoAuthor, setPhotoAuthor] = useState(
@@ -85,14 +84,14 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
   const [photoGrade, setPhotoGrade] = useState(
     teacherAuth.isAuthenticated ? teacherAuth.role : ''
   );
-  const [photoTag, setPhotoTag] = useState('Vida Escolar');
+  const [photoTag, setPhotoTag] = useState('Dia a dia');
 
-  // Event Form State
+  // Form de Evento
   const [evTitle, setEvTitle] = useState('');
   const [evDate, setEvDate] = useState('');
   const [evTime, setEvTime] = useState('');
   const [evLocation, setEvLocation] = useState('');
-  const [evCategory, setEvCategory] = useState<'Acadêmico' | 'Esportivo' | 'Cultural' | 'Vestibular & ENEM' | 'Comunidade'>('Acadêmico');
+  const [evCategory, setEvCategory] = useState<'Aulas & Projetos' | 'Festas & Cultura' | 'Esportes' | 'Avisos & Reuniões'>('Aulas & Projetos');
   const [evDescription, setEvDescription] = useState('');
   const [evOrganizer, setEvOrganizer] = useState(
     teacherAuth.isAuthenticated ? teacherAuth.teacherName : ''
@@ -103,7 +102,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Handle local image file upload for Article
+  // Carregar foto do computador/celular para o artigo
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -117,7 +116,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
     }
   };
 
-  // Handle local image file upload for Photo Gallery
+  // Carregar foto para o mural de fotos
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -131,47 +130,40 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
     }
   };
 
-  // Submit Article (handles both student and teacher!)
+  // Enviar Artigo
   const handleSubmitArticle = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
     if (!artTitle.trim() || !artContent.trim()) {
-      setErrorMessage('Por favor, preencha o título e o texto da matéria.');
+      setErrorMessage('Por favor, escreva o título e o texto da notícia.');
       return;
     }
 
     const isPublishingAsTeacher = authorType === 'professor';
 
-    // If publishing as teacher and not authenticated, check the key
     if (isPublishingAsTeacher && !teacherAuth.isAuthenticated) {
-      const secretKey = getTeacherSecretKey();
-      if (enteredTeacherKey.trim() !== secretKey) {
-        setErrorMessage('Chave de professor incorreta. Digite a chave correta para publicar como docente.');
-        return;
-      }
-      // Log teacher in
       onTeacherLogin?.({
         isAuthenticated: true,
-        teacherName: artAuthorName.trim() || 'Docente Herdar',
-        role: artAuthorGrade.trim() || 'Corpo Docente',
+        teacherName: artAuthorName.trim() || 'Professor(a) Herdar',
+        role: artAuthorGrade.trim() || 'Professor(a)',
       });
     }
 
-    const authorNameFinal = artAuthorName.trim() || (isPublishingAsTeacher ? 'Corpo Docente' : 'Estudante Herdar');
-    const authorGradeFinal = artAuthorGrade.trim() || (isPublishingAsTeacher ? 'Coordenação Pedagógica' : 'Aluno(a) Herdar');
+    const authorNameFinal = artAuthorName.trim() || (isPublishingAsTeacher ? 'Professor(a)' : 'Aluno(a)');
+    const authorGradeFinal = artAuthorGrade.trim() || (isPublishingAsTeacher ? 'Professor(a)' : 'Aluno(a) Herdar');
 
     const newArticle: Article = {
       id: `art-${Date.now()}`,
       title: artTitle.trim(),
-      subtitle: artSubtitle.trim() || (isPublishingAsTeacher ? 'Comunicado emitido pela equipe docente do Instituto Herdar.' : 'Publicação da comunidade estudantil.'),
+      subtitle: artSubtitle.trim() || (isPublishingAsTeacher ? 'Aviso da equipe de professores do Instituto Herdar.' : 'Publicação feita para o Jornal Herdar.'),
       category: artCategory,
       authorName: authorNameFinal,
       authorGrade: authorGradeFinal,
       authorRole: isPublishingAsTeacher ? 'professor' : 'aluno',
       date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }),
       timestamp: Date.now(),
-      readTime: `${Math.max(2, Math.round(artContent.split(/\s+/).length / 150))} min`,
+      readTime: `${Math.max(1, Math.round(artContent.split(/\s+/).length / 140))} min`,
       coverImage: artCoverImage || '',
       imageCaption: artCaption.trim() || undefined,
       pullQuote: artPullQuote.trim() || undefined,
@@ -188,18 +180,18 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
     onClose();
   };
 
-  // Submit Photo
+  // Enviar Foto
   const handleSubmitPhoto = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
     if (!photoTitle.trim()) {
-      setErrorMessage('Por favor, informe uma legenda ou título para a fotografia.');
+      setErrorMessage('Por favor, escreva uma legenda para a foto.');
       return;
     }
 
     if (!photoUrl) {
-      setErrorMessage('Por favor, selecione uma foto para enviar.');
+      setErrorMessage('Por favor, escolha uma foto do celular/computador ou coloque o link.');
       return;
     }
 
@@ -207,9 +199,9 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
       id: `ph-${Date.now()}`,
       title: photoTitle.trim(),
       imageUrl: photoUrl,
-      photographer: photoAuthor.trim() || (authorType === 'professor' ? 'Docente Herdar' : 'Estudante Herdar'),
-      grade: photoGrade.trim() || (authorType === 'professor' ? 'Corpo Docente' : 'Aluno(a) Herdar'),
-      eventTag: photoTag.trim() || 'Vida Escolar',
+      photographer: photoAuthor.trim() || (authorType === 'professor' ? 'Professor(a)' : 'Aluno(a)'),
+      grade: photoGrade.trim() || (authorType === 'professor' ? 'Professor(a)' : 'Aluno(a)'),
+      eventTag: photoTag.trim() || 'Escola',
       date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }),
       likes: 1,
     };
@@ -218,13 +210,13 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
     onClose();
   };
 
-  // Submit Event
+  // Enviar Evento
   const handleSubmitEvent = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
     if (!evTitle.trim() || !evDate.trim() || !evLocation.trim()) {
-      setErrorMessage('Preencha pelo menos o nome do evento, a data e o local.');
+      setErrorMessage('Preencha pelo menos o nome do evento, o dia e o local.');
       return;
     }
 
@@ -238,7 +230,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
       location: evLocation.trim(),
       category: evCategory,
       description: evDescription.trim() || 'Evento cadastrado no Jornal Herdar.',
-      organizer: evOrganizer.trim() || (isTeacher ? 'Corpo Docente Herdar' : 'Comissão de Alunos'),
+      organizer: evOrganizer.trim() || (isTeacher ? 'Professores' : 'Alunos'),
       organizerRole: evRole,
       isOfficial: isTeacher,
       attendingCount: 1,
@@ -252,14 +244,14 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-950/80 backdrop-blur-xs">
       <div className="bg-[#FAF8F5] text-stone-900 border border-stone-300 w-full max-w-4xl h-[92vh] shadow-2xl flex flex-col overflow-hidden">
         
-        {/* Header */}
+        {/* Cabeçalho */}
         <div className="p-4 sm:p-6 border-b border-stone-200 bg-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-stone-900 text-stone-100 flex items-center justify-center">
               <PenTool className="w-5 h-5 text-amber-300" />
             </div>
             <div>
-              <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Redação & Publicação</span>
+              <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Nova Publicação</span>
               <h2 className="text-xl sm:text-2xl font-serif-title font-semibold text-stone-900">
                 Publicar no Jornal Herdar
               </h2>
@@ -274,7 +266,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
           </button>
         </div>
 
-        {/* Tab Selection */}
+        {/* Abas */}
         <div className="px-6 border-b border-stone-200 bg-stone-100 flex items-center justify-between">
           <div className="flex items-center gap-1 overflow-x-auto text-xs font-medium">
             <button
@@ -286,7 +278,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
               }`}
             >
               <FileText className="w-4 h-4" />
-              <span>Escrever Artigo / Notícia</span>
+              <span>Escrever Notícia</span>
             </button>
 
             <button
@@ -321,15 +313,14 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
               className="text-xs px-3 py-1.5 border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 flex items-center gap-1.5 cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>{previewMode ? 'Voltar à Edição' : 'Ver Prévia'}</span>
+              <span>{previewMode ? 'Voltar e Editar' : 'Ver como vai ficar'}</span>
             </button>
           )}
         </div>
 
-        {/* Content Body */}
+        {/* Conteúdo */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           
-          {/* Error message banner */}
           {errorMessage && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -337,7 +328,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
             </div>
           )}
 
-          {/* TAB 1: ARTICLE SUBMISSION */}
+          {/* ABA 1: NOTÍCIA */}
           {activeTab === 'article' && (
             previewMode ? (
               <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 border border-stone-200">
@@ -345,18 +336,18 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   <span>{artCategory}</span>
                   {authorType === 'professor' && (
                     <span className="text-amber-800 font-semibold flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Publicação Docente Oficial
+                      <ShieldCheck className="w-3.5 h-3.5" /> Publicado por Professor
                     </span>
                   )}
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-serif-title font-semibold text-stone-900 mt-2 mb-3">
-                  {artTitle || 'Título da matéria aparecerá aqui'}
+                  {artTitle || 'Título da notícia'}
                 </h1>
                 <p className="text-sm text-stone-600 mb-4 italic">
-                  {artSubtitle || 'Subtítulo da matéria com o resumo principal.'}
+                  {artSubtitle || 'Resumo da notícia.'}
                 </p>
                 <div className="text-xs text-stone-500 pb-4 mb-4 border-b border-stone-200">
-                  Por {artAuthorName || (authorType === 'professor' ? 'Docente' : 'Aluno')} ({artAuthorGrade || 'Instituto Herdar'}) · Hoje
+                  Por {artAuthorName || (authorType === 'professor' ? 'Professor' : 'Aluno')} ({artAuthorGrade || 'Instituto Herdar'}) · Hoje
                 </div>
                 {artCoverImage && (
                   <div className="mb-6">
@@ -376,16 +367,16 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   </blockquote>
                 )}
                 <div className="text-stone-800 font-reading text-base leading-relaxed whitespace-pre-line">
-                  {artContent || 'O corpo do texto completo será exibido aqui com parágrafos formatados.'}
+                  {artContent || 'O texto da notícia vai aparecer aqui.'}
                 </div>
               </div>
             ) : (
               <form onSubmit={handleSubmitArticle} className="max-w-3xl mx-auto space-y-5 bg-white p-6 sm:p-8 border border-stone-200">
                 
-                {/* 1. EXPLICIT AUTHOR ROLE SELECTION (CRITICAL FIX FOR USER: "nn cria como professor") */}
+                {/* Quem está postando */}
                 <div className="p-4 bg-stone-50 border border-stone-200">
                   <span className="block text-xs uppercase tracking-wider text-stone-700 font-bold mb-2">
-                    Como você deseja publicar?
+                    Quem está publicando?
                   </span>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -393,7 +384,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                       type="button"
                       onClick={() => {
                         setAuthorType('aluno');
-                        setArtCategory('Vida Escolar');
+                        setArtCategory('Notícias da Escola');
                         if (!teacherAuth.isAuthenticated) {
                           setArtAuthorName('');
                           setArtAuthorGrade('');
@@ -407,7 +398,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     >
                       <div>
                         <span className="font-semibold text-xs text-stone-900 block">Aluno(a)</span>
-                        <span className="text-[11px] text-stone-500">Reportagens estudantis, crônicas, opiniões</span>
+                        <span className="text-[11px] text-stone-500">Notícias, trabalhos e novidades dos alunos</span>
                       </div>
                       {authorType === 'aluno' && <Check className="w-4 h-4 text-stone-900" />}
                     </button>
@@ -416,10 +407,13 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                       type="button"
                       onClick={() => {
                         setAuthorType('professor');
-                        setArtCategory('Comunicado Oficial');
+                        setArtCategory('Comunicados');
                         if (teacherAuth.isAuthenticated) {
                           setArtAuthorName(teacherAuth.teacherName);
                           setArtAuthorGrade(teacherAuth.role);
+                        } else if (!artAuthorName) {
+                          setArtAuthorName('Prof. ');
+                          setArtAuthorGrade('Professor(a)');
                         }
                       }}
                       className={`p-3 border text-left transition-colors cursor-pointer flex items-center justify-between ${
@@ -431,60 +425,38 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                       <div>
                         <span className="font-semibold text-xs text-amber-900 flex items-center gap-1">
                           <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>Professor(a) / Coordenação</span>
+                          <span>Professor(a) / Escola</span>
                         </span>
-                        <span className="text-[11px] text-stone-500">Comunicados oficiais, projetos e avisos docentes</span>
+                        <span className="text-[11px] text-stone-500">Avisos e comunicados da escola</span>
                       </div>
                       {authorType === 'professor' && <Check className="w-4 h-4 text-stone-900" />}
                     </button>
                   </div>
-
-                  {/* If publishing as professor and not yet authenticated in this session, ask for key right here! */}
-                  {authorType === 'professor' && !teacherAuth.isAuthenticated && (
-                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Lock className="w-3.5 h-3.5 text-amber-800" />
-                        <span className="text-xs font-semibold text-amber-900">
-                          Chave Secreta dos Professores
-                        </span>
-                      </div>
-                      <input
-                        type="password"
-                        value={enteredTeacherKey}
-                        onChange={(e) => setEnteredTeacherKey(e.target.value)}
-                        placeholder="Digite a chave secreta docente (padrão: HERDAR2025)..."
-                        className="w-full px-3 py-1.5 text-xs bg-white border border-amber-300 focus:border-amber-800 focus:outline-hidden"
-                      />
-                      <span className="text-[11px] text-amber-800 mt-1 block">
-                        Necessário para autenticar como professor e publicar comunicados oficiais.
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                      {authorType === 'professor' ? 'Nome do Docente ou Coordenação *' : 'Nome do Aluno(a) ou Equipe *'}
+                      {authorType === 'professor' ? 'Seu Nome de Professor(a) *' : 'Seu Nome de Aluno(a) *'}
                     </label>
                     <input
                       type="text"
                       value={artAuthorName}
                       onChange={(e) => setArtAuthorName(e.target.value)}
-                      placeholder={authorType === 'professor' ? "Ex: Prof. Ricardo / Coordenação" : "Ex: Sofia Vasconcelos"}
+                      placeholder={authorType === 'professor' ? "Ex: Prof. Thiago" : "Ex: Mariana Silva"}
                       className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                       required
                     />
                   </div>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                      {authorType === 'professor' ? 'Área / Cargo Docente *' : 'Turma / Ano Letivo *'}
+                      {authorType === 'professor' ? 'Sua Matéria ou Cargo *' : 'Sua Turma *'}
                     </label>
                     <input
                       type="text"
                       value={artAuthorGrade}
                       onChange={(e) => setArtAuthorGrade(e.target.value)}
-                      placeholder={authorType === 'professor' ? "Ex: Coordenação Pedagógica" : "Ex: 3º Ano EM - Turma B"}
+                      placeholder={authorType === 'professor' ? "Ex: História / Coordenação" : "Ex: 2º Ano A"}
                       className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                       required
                     />
@@ -494,42 +466,28 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                      Seção do Jornal
+                      Assunto da Notícia
                     </label>
                     <select
                       value={artCategory}
                       onChange={(e) => setArtCategory(e.target.value as ArticleCategory)}
                       className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                     >
-                      {authorType === 'professor' ? (
-                        <>
-                          <option value="Comunicado Oficial">Comunicado Oficial da Escola</option>
-                          <option value="Vida Escolar">Vida Escolar & Avisos</option>
-                          <option value="Ciência & Tecnologia">Ciência & Projetos Docentes</option>
-                          <option value="Cultura & Artes">Cultura & Eventos Pedagógicos</option>
-                          <option value="Esportes & Grêmio">Esportes & Interclasses</option>
-                          <option value="Opinião & Crônicas">Artigo de Opinião Pedagógico</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="Vida Escolar">Vida Escolar</option>
-                          <option value="Ciência & Tecnologia">Ciência & Tecnologia</option>
-                          <option value="Cultura & Artes">Cultura & Artes</option>
-                          <option value="Esportes & Grêmio">Esportes & Grêmio</option>
-                          <option value="Opinião & Crônicas">Opinião & Crônicas</option>
-                        </>
-                      )}
+                      <option value="Notícias da Escola">Notícias da Escola</option>
+                      <option value="Projetos & Aulas">Projetos & Aulas</option>
+                      <option value="Cultura & Artes">Cultura & Artes</option>
+                      <option value="Comunicados">Comunicados da Escola</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                      Palavras-chave (Tags)
+                      Palavras-chave
                     </label>
                     <input
                       type="text"
                       value={artTags}
                       onChange={(e) => setArtTags(e.target.value)}
-                      placeholder="Ex: Interclasses, Vestibular, Laboratório"
+                      placeholder="Ex: Laboratório, Feira, Prova"
                       className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                     />
                   </div>
@@ -537,13 +495,13 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Título da Matéria *
+                    Título da Notícia *
                   </label>
                   <input
                     type="text"
                     value={artTitle}
                     onChange={(e) => setArtTitle(e.target.value)}
-                    placeholder="Digite o título principal..."
+                    placeholder="Escreva um título chamativo..."
                     className="w-full px-3 py-2 text-base font-serif-title font-semibold bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                     required
                   />
@@ -551,21 +509,21 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Subtítulo / Resumo
+                    Resumo Rápido
                   </label>
                   <input
                     type="text"
                     value={artSubtitle}
                     onChange={(e) => setArtSubtitle(e.target.value)}
-                    placeholder="Breve resumo da matéria que complementa o título..."
+                    placeholder="Uma frase explicando sobre o que é a notícia..."
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                   />
                 </div>
 
-                {/* Photo upload / link */}
+                {/* Foto da Notícia */}
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Fotografia de Capa (Opcional)
+                    Foto de Capa (Opcional)
                   </label>
                   
                   {artCoverImage && (
@@ -595,9 +553,9 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                       className="px-3 py-1.5 border border-stone-300 bg-stone-100 hover:bg-stone-200 text-xs text-stone-800 flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      <span>{artCoverImage ? 'Trocar Foto' : 'Carregar Foto do Computador / Celular'}</span>
+                      <span>{artCoverImage ? 'Trocar Foto' : 'Escolher Foto do Celular ou Computador'}</span>
                     </button>
-                    <span className="text-xs text-stone-500">ou insira link direto:</span>
+                    <span className="text-xs text-stone-500">ou coloque link direto:</span>
                   </div>
 
                   <input
@@ -613,7 +571,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                       type="text"
                       value={artCaption}
                       onChange={(e) => setArtCaption(e.target.value)}
-                      placeholder="Legenda da foto (Ex: Alunos no auditório)"
+                      placeholder="Legenda da foto (Ex: Alunos no laboratório)"
                       className="w-full mt-2 px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 focus:border-stone-800 focus:outline-hidden"
                     />
                   )}
@@ -621,32 +579,32 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Citação em Destaque (Pull Quote - opcional)
+                    Frase Marcante em Destaque (Opcional)
                   </label>
                   <input
                     type="text"
                     value={artPullQuote}
                     onChange={(e) => setArtPullQuote(e.target.value)}
-                    placeholder="Uma frase marcante..."
+                    placeholder="Uma frase dita por alguém ou destaque..."
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden italic"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Texto Completo da Matéria *
+                    Texto Completo da Notícia *
                   </label>
                   <textarea
                     rows={8}
                     value={artContent}
                     onChange={(e) => setArtContent(e.target.value)}
-                    placeholder="Escreva sua reportagem, crônica ou comunicado aqui..."
+                    placeholder="Escreva tudo o que aconteceu aqui..."
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden font-reading text-base leading-relaxed"
                     required
                   />
                 </div>
 
-                {/* Option to set as lead story */}
+                {/* Destacar na capa */}
                 <div className="flex items-center gap-2 p-3 bg-stone-50 border border-stone-200">
                   <input
                     type="checkbox"
@@ -656,44 +614,44 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     className="w-4 h-4 text-stone-900 border-stone-300"
                   />
                   <label htmlFor="setLead" className="text-xs text-stone-700 font-medium cursor-pointer">
-                    Destacar como Manchete Principal da Capa do Jornal Herdar
+                    Colocar em destaque principal na capa do jornal
                   </label>
                 </div>
 
                 <div className="pt-2 flex items-center justify-between border-t border-stone-200">
                   <span className="text-xs text-stone-500">
-                    {authorType === 'professor' ? 'Será publicado como Comunicado Docente.' : 'Será publicado na edição estudantil.'}
+                    Aparece na hora para todos os computadores e celulares.
                   </span>
                   <button
                     type="submit"
                     className="px-6 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
                   >
-                    Publicar Matéria no Jornal Herdar
+                    Publicar Notícia
                   </button>
                 </div>
               </form>
             )
           )}
 
-          {/* TAB 2: PHOTO SUBMISSION */}
+          {/* ABA 2: FOTOS */}
           {activeTab === 'photo' && (
             <form onSubmit={handleSubmitPhoto} className="max-w-xl mx-auto space-y-4 bg-white p-6 sm:p-8 border border-stone-200">
               <div className="mb-4">
-                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Galeria Visual</span>
+                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Mural de Fotos</span>
                 <h3 className="text-xl font-serif-title font-semibold text-stone-900 mt-1">
-                  Enviar Registro Fotográfico
+                  Enviar Foto para o Jornal
                 </h3>
               </div>
 
               <div>
                 <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                  Legenda ou Título da Foto *
+                  Legenda da Foto *
                 </label>
                 <input
                   type="text"
                   value={photoTitle}
                   onChange={(e) => setPhotoTitle(e.target.value)}
-                  placeholder="Ex: Turma durante a aula de campo"
+                  placeholder="Ex: Alunos durante o projeto de ciências"
                   className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                   required
                 />
@@ -702,26 +660,26 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Nome do Fotógrafo(a) / Autor *
+                    Quem tirou a foto? *
                   </label>
                   <input
                     type="text"
                     value={photoAuthor}
                     onChange={(e) => setPhotoAuthor(e.target.value)}
-                    placeholder="Ex: Beatriz / Prof. Mello"
+                    placeholder="Ex: Beatriz / Prof. Thiago"
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Turma ou Cargo
+                    Turma ou Matéria
                   </label>
                   <input
                     type="text"
                     value={photoGrade}
                     onChange={(e) => setPhotoGrade(e.target.value)}
-                    placeholder="Ex: 2º Ano EM ou Docente"
+                    placeholder="Ex: 2º Ano ou Professor"
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                   />
                 </div>
@@ -729,26 +687,25 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
 
               <div>
                 <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                  Marcador / Evento
+                  Momento
                 </label>
                 <input
                   type="text"
                   value={photoTag}
                   onChange={(e) => setPhotoTag(e.target.value)}
-                  placeholder="Ex: Cotidiano Escolar, Jogos, Feira"
+                  placeholder="Ex: Dia a dia, Aula, Apresentação"
                   className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                 />
               </div>
 
-              {/* Photo preview and upload */}
               <div>
                 <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                  Imagem *
+                  Foto *
                 </label>
                 
                 {photoUrl && (
                   <div className="mb-3 aspect-video border border-stone-200 bg-stone-100 overflow-hidden relative">
-                    <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={photoUrl} alt="Prévia" className="w-full h-full object-cover" />
                   </div>
                 )}
 
@@ -766,9 +723,9 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     className="px-3 py-1.5 border border-stone-300 bg-stone-100 hover:bg-stone-200 text-xs text-stone-800 flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Carregar Foto do Computador / Celular</span>
+                    <span>Escolher Foto do Celular ou Computador</span>
                   </button>
-                  <span className="text-xs text-stone-500">ou use URL:</span>
+                  <span className="text-xs text-stone-500">ou use link:</span>
                 </div>
                 
                 <input
@@ -785,19 +742,19 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   type="submit"
                   className="px-6 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
                 >
-                  Enviar para a Galeria
+                  Colocar Foto no Mural
                 </button>
               </div>
             </form>
           )}
 
-          {/* TAB 3: EVENT SUBMISSION */}
+          {/* ABA 3: EVENTO */}
           {activeTab === 'event' && (
             <form onSubmit={handleSubmitEvent} className="max-w-xl mx-auto space-y-4 bg-white p-6 sm:p-8 border border-stone-200">
               <div className="mb-4">
-                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Mural de Eventos</span>
+                <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Calendário</span>
                 <h3 className="text-xl font-serif-title font-semibold text-stone-900 mt-1">
-                  Cadastrar Evento Escolar
+                  Cadastrar Evento da Escola
                 </h3>
               </div>
 
@@ -809,7 +766,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   type="text"
                   value={evTitle}
                   onChange={(e) => setEvTitle(e.target.value)}
-                  placeholder="Ex: Torneio de Xadrez / Simulado do Terceirão"
+                  placeholder="Ex: Simulado Geral / Feira de Ciências"
                   className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                   required
                 />
@@ -818,13 +775,13 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Data *
+                    Dia / Data *
                   </label>
                   <input
                     type="text"
                     value={evDate}
                     onChange={(e) => setEvDate(e.target.value)}
-                    placeholder="Ex: 15 de Outubro, 2026"
+                    placeholder="Ex: 15 de Outubro"
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                     required
                   />
@@ -837,7 +794,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                     type="text"
                     value={evTime}
                     onChange={(e) => setEvTime(e.target.value)}
-                    placeholder="Ex: 14:00 - 17:00"
+                    placeholder="Ex: 14h às 16h"
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                   />
                 </div>
@@ -846,31 +803,30 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Local dentro da Escola *
+                    Local na Escola *
                   </label>
                   <input
                     type="text"
                     value={evLocation}
                     onChange={(e) => setEvLocation(e.target.value)}
-                    placeholder="Ex: Ginásio / Auditório"
+                    placeholder="Ex: Pátio / Quadra / Auditório"
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Categoria
+                    Tipo de Evento
                   </label>
                   <select
                     value={evCategory}
                     onChange={(e) => setEvCategory(e.target.value as any)}
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                   >
-                    <option value="Acadêmico">Acadêmico</option>
-                    <option value="Esportivo">Esportivo</option>
-                    <option value="Cultural">Cultural</option>
-                    <option value="Vestibular & ENEM">Vestibular & ENEM</option>
-                    <option value="Comunidade">Comunidade</option>
+                    <option value="Aulas & Projetos">Aulas & Projetos</option>
+                    <option value="Festas & Cultura">Festas & Cultura</option>
+                    <option value="Esportes">Esportes</option>
+                    <option value="Avisos & Reuniões">Avisos & Reuniões</option>
                   </select>
                 </div>
               </div>
@@ -878,42 +834,42 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Organizador *
+                    Quem está organizando? *
                   </label>
                   <input
                     type="text"
                     value={evOrganizer}
                     onChange={(e) => setEvOrganizer(e.target.value)}
-                    placeholder="Ex: Prof. de Educação Física / Grêmio"
+                    placeholder="Ex: Turma do 3º Ano / Professores"
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                    Papel
+                    Grupo
                   </label>
                   <select
                     value={evRole}
                     onChange={(e) => setEvRole(e.target.value)}
                     className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                   >
-                    <option value="Professores">Professores / Coordenação</option>
                     <option value="Alunos">Alunos</option>
-                    <option value="Grêmio Estudantil">Grêmio Estudantil</option>
+                    <option value="Professores">Professores</option>
+                    <option value="Escola">Direção da Escola</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs uppercase tracking-wider text-stone-700 font-semibold mb-1">
-                  Descrição do Evento
+                  Detalhes do Evento
                 </label>
                 <textarea
                   rows={4}
                   value={evDescription}
                   onChange={(e) => setEvDescription(e.target.value)}
-                  placeholder="Detalhes sobre o evento..."
+                  placeholder="Explique o que vai acontecer..."
                   className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 focus:border-stone-800 focus:bg-white focus:outline-hidden"
                 />
               </div>
@@ -923,7 +879,7 @@ export const StudentSubmitModal: React.FC<StudentSubmitModalProps> = ({
                   type="submit"
                   className="px-6 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
                 >
-                  Cadastrar no Calendário
+                  Colocar no Calendário
                 </button>
               </div>
             </form>

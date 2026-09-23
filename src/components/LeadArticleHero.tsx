@@ -21,11 +21,11 @@ export const LeadArticleHero: React.FC<LeadArticleHeroProps> = ({
         onClick={() => onRead(article)}
         className="group grid grid-cols-1 lg:grid-cols-12 gap-8 items-center cursor-pointer bg-white p-6 sm:p-8 border border-stone-200 shadow-xs hover:border-stone-400 transition-all"
       >
-        {/* Left narrative column */}
+        {/* Coluna da esquerda */}
         <div className="lg:col-span-6 flex flex-col justify-between h-full">
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 font-semibold mb-3">
-              <span className="text-amber-800">Manchete em Destaque</span>
+              <span className="text-amber-800 font-bold">Destaque na Capa</span>
               <span aria-hidden="true">·</span>
               <span>{article.category}</span>
             </div>
@@ -70,14 +70,14 @@ export const LeadArticleHero: React.FC<LeadArticleHeroProps> = ({
               </button>
 
               <span className="inline-flex items-center gap-1.5 font-medium text-stone-900 group-hover:translate-x-1 transition-transform">
-                <span>Ler Reportagem Completa</span>
+                <span>Ler Notícia Completa</span>
                 <ArrowRight className="w-4 h-4" />
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right visual column */}
+        {/* Coluna da foto */}
         <div className="lg:col-span-6">
           <div className="aspect-16/10 sm:aspect-16/11 overflow-hidden bg-stone-100 border border-stone-200 relative">
             <img
@@ -86,10 +86,10 @@ export const LeadArticleHero: React.FC<LeadArticleHeroProps> = ({
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
             />
-            {article.category === 'Comunicado Oficial' && (
+            {article.category === 'Comunicados' && (
               <div className="absolute top-3 left-3 bg-stone-900/90 text-amber-300 text-xs uppercase tracking-wider font-semibold px-2.5 py-1 border border-stone-800 flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Comunicado Oficial</span>
+                <span>Aviso da Escola</span>
               </div>
             )}
           </div>

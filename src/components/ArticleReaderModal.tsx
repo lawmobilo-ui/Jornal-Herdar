@@ -56,7 +56,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
       id: `comm-${Date.now()}`,
       articleId: article.id,
       authorName: commentName.trim(),
-      authorGrade: commentGrade.trim() || 'Comunidade Herdar',
+      authorGrade: commentGrade.trim() || 'Instituto Herdar',
       text: commentText.trim(),
       date: new Date().toLocaleDateString('pt-BR', { 
         day: 'numeric', 
@@ -83,7 +83,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-950/80 backdrop-blur-xs overflow-y-auto">
       <div className="bg-[#FAF8F5] text-stone-900 border border-stone-300 w-full max-w-4xl max-h-[92vh] shadow-2xl flex flex-col my-auto relative">
         
-        {/* Top reader action bar */}
+        {/* Barra superior */}
         <div className="p-3 sm:px-6 border-b border-stone-200 bg-white flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs text-stone-500">
             <span className="font-semibold text-stone-700">{article.category}</span>
@@ -101,7 +101,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                   ? 'bg-rose-50 border-rose-200 text-rose-700 font-semibold'
                   : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
               }`}
-              title="Apoiar este artigo"
+              title="Curtir notícia"
             >
               <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
               <span>{article.likes + (isLiked ? 1 : 0)}</span>
@@ -110,7 +110,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
             <button
               onClick={handleCopyLink}
               className="p-1.5 bg-white border border-stone-200 text-stone-600 hover:text-stone-900 transition-colors"
-              title="Copiar link da reportagem"
+              title="Copiar link da notícia"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
             </button>
@@ -118,17 +118,16 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
             <button
               onClick={() => window.print()}
               className="p-1.5 bg-white border border-stone-200 text-stone-600 hover:text-stone-900 transition-colors"
-              title="Imprimir artigo"
+              title="Imprimir notícia"
             >
               <Printer className="w-4 h-4" />
             </button>
 
-            {/* Direct delete button in reader */}
             {onDeleteArticle && (
               <button
                 onClick={handleDelete}
                 className="p-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-800 transition-colors flex items-center gap-1 text-xs px-2"
-                title="Excluir esta publicação"
+                title="Excluir notícia"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Excluir</span>
@@ -145,11 +144,10 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
           </div>
         </div>
 
-        {/* Scrollable Article Narrative */}
+        {/* Leitura da Notícia */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-10">
           <article className="max-w-2xl mx-auto">
             
-            {/* Header info */}
             <div className="mb-6">
               <span className="text-xs uppercase tracking-widest text-stone-500 font-medium">
                 {article.category}
@@ -162,7 +160,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
               </p>
             </div>
 
-            {/* Author Byline */}
+            {/* Autor */}
             <div className="flex items-center gap-3 py-4 border-y border-stone-200 mb-8">
               <div className="w-10 h-10 rounded-full bg-stone-200 text-stone-700 flex items-center justify-center font-serif-title font-semibold text-sm">
                 {article.authorName.charAt(0)}
@@ -172,7 +170,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                   <span className="text-sm font-semibold text-stone-900">{article.authorName}</span>
                   {(article.authorRole === 'direcao' || article.authorRole === 'professor') && (
                     <span className="inline-flex items-center gap-1 text-[11px] text-amber-900 font-medium bg-amber-50 px-1.5 py-0.5 border border-amber-200">
-                      <ShieldCheck className="w-3 h-3" /> Publicação Docente
+                      <ShieldCheck className="w-3 h-3" /> Publicado por Professor
                     </span>
                   )}
                 </div>
@@ -182,7 +180,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
               </div>
             </div>
 
-            {/* Featured Image */}
+            {/* Imagem */}
             {article.coverImage && (
               <figure className="mb-8">
                 <div className="overflow-hidden border border-stone-200 bg-stone-100">
@@ -200,14 +198,14 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
               </figure>
             )}
 
-            {/* Pull quote if exists */}
+            {/* Frase em destaque */}
             {article.pullQuote && (
               <blockquote className="my-8 px-6 py-4 border-l-3 border-stone-900 bg-stone-100/60 font-serif-title text-xl text-stone-900 italic leading-snug">
                 "{article.pullQuote}"
               </blockquote>
             )}
 
-            {/* Article Prose with drop-cap on first paragraph */}
+            {/* Texto */}
             <div className="text-stone-800 font-reading text-lg leading-relaxed space-y-6">
               {article.content.split('\n\n').map((paragraph, idx) => (
                 <p 
@@ -231,21 +229,21 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
               </div>
             )}
 
-            {/* Interactive Comment Section */}
+            {/* Comentários */}
             <section className="mt-12 pt-8 border-t-2 border-stone-200">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-stone-700" />
                   <h3 className="font-serif-title font-semibold text-xl text-stone-900">
-                    Comentários da Comunidade ({articleComments.length})
+                    Comentários ({articleComments.length})
                   </h3>
                 </div>
               </div>
 
-              {/* Add comment form */}
+              {/* Form de Comentário */}
               <form onSubmit={handlePostComment} className="mb-8 p-4 bg-white border border-stone-200 space-y-3">
                 <span className="text-xs uppercase tracking-wider text-stone-600 font-semibold block">
-                  Deixe sua mensagem sobre esta matéria
+                  Deixe seu comentário sobre esta notícia
                 </span>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -261,7 +259,7 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                     type="text"
                     value={commentGrade}
                     onChange={(e) => setCommentGrade(e.target.value)}
-                    placeholder="Sua Turma ou Função"
+                    placeholder="Sua Turma ou Matéria"
                     className="px-3 py-1.5 text-xs bg-stone-50 border border-stone-300 focus:border-stone-800 focus:outline-hidden"
                   />
                 </div>
@@ -286,11 +284,11 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
                 </div>
               </form>
 
-              {/* Comments List */}
+              {/* Lista de comentários */}
               <div className="space-y-4">
                 {articleComments.length === 0 ? (
                   <p className="text-xs text-stone-500 italic text-center py-4">
-                    Nenhum comentário publicado ainda. Seja o primeiro a comentar!
+                    Nenhum comentário ainda. Seja o primeiro a comentar!
                   </p>
                 ) : (
                   articleComments.map((comm) => (

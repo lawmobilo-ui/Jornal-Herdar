@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Articles collection
+    match /articles/{articleId} {
+      allow read: if true;
+      allow create: if isValidId(articleId) 
+        && request.resource.data.title is string && request.resource.data.title.size() <= 300
+        && request.resource.data.content is string && request.resource.data.content.size() <= 100000;
+      allow update: if isValidId(articleId);
+      allow delete: if isValidId(articleId);
+    }
+
+    // Events collection
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if isValidId(eventId) 
+        && request.resource.data.title is string && request.resource.data.title.size() <= 300;
+      allow update: if isValidId(eventId);
+      allow delete: if isValidId(eventId);
+    }
+
+    // Photos collection
+    match /photos/{photoId} {
+      allow read: if true;
+      allow create: if isValidId(photoId) 
+        && request.resource.data.title is string && request.resource.data.title.size() <= 300;
+      allow update: if isValidId(photoId);
+      allow delete: if isValidId(photoId);
+    }
+
+    // Comments collection
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isValidId(commentId)
+        && request.resource.data.articleId is string
+        && request.resource.data.text is string && request.resource.data.text.size() <= 2000;
+      allow update: if isValidId(commentId);
+      allow delete: if isValidId(commentId);
+    }
+  }
+}

@@ -17,23 +17,22 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
   onTogglePhotoLike,
   onOpenNewPhoto,
   onDeletePhoto,
-  teacherAuth,
 }) => {
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoSubmission | null>(null);
 
   return (
-    <section id="galeria" className="my-14 pt-10 border-t-2 border-stone-300">
+    <section id="fotos" className="my-14 pt-10 border-t-2 border-stone-300">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 font-semibold mb-1">
             <Camera className="w-3.5 h-3.5 text-stone-700" />
-            <span>Crônicas Visuais</span>
+            <span>Mural de Fotos</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-serif-title font-bold text-stone-900">
-            Galeria & Momentos do Instituto Herdar
+            Fotos da Escola
           </h2>
           <p className="text-xs sm:text-sm text-stone-600 mt-1">
-            Fotografias capturadas pelo olhar da comunidade escolar nas salas, laboratórios, quadras e intervalos.
+            Fotos tiradas por alunos e professores no dia a dia do Instituto Herdar.
           </p>
         </div>
 
@@ -46,21 +45,20 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
         </button>
       </div>
 
-      {/* Photo Grid or Clean Empty State */}
       {photos.length === 0 ? (
         <div className="bg-white border border-stone-200 p-8 sm:p-12 text-center">
           <Camera className="w-10 h-10 text-stone-400 mx-auto mb-3" />
           <h3 className="font-serif-title text-xl font-semibold text-stone-800 mb-2">
-            Mural fotográfico pronto para novas fotos
+            Ainda não há fotos no mural
           </h3>
           <p className="text-xs text-stone-500 max-w-md mx-auto mb-6">
-            Envie imagens dos trabalhos em grupo, jogos, eventos e momentos especiais no Instituto Herdar.
+            Envie fotos de trabalhos, aulas, momentos no pátio e projetos no Instituto Herdar.
           </p>
           <button
             onClick={onOpenNewPhoto}
             className="px-5 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
           >
-            Enviar Primeira Fotografia
+            Enviar Primeira Foto
           </button>
         </div>
       ) : (
@@ -111,7 +109,7 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
                         className={`flex items-center gap-1 transition-colors p-1 ${
                           isLiked ? 'text-rose-600 font-medium' : 'text-stone-400 hover:text-stone-700'
                         }`}
-                        title="Apoiar foto"
+                        title="Curtir foto"
                       >
                         <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
                         <span className="tabular-nums text-xs">{totalLikes}</span>
@@ -135,7 +133,7 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
         </div>
       )}
 
-      {/* Lightbox Modal */}
+      {/* Foto ampliada */}
       {selectedPhoto && (
         <div 
           onClick={() => setSelectedPhoto(null)}
@@ -171,7 +169,7 @@ export const PhotoGallerySection: React.FC<PhotoGallerySectionProps> = ({
                   {selectedPhoto.title}
                 </h3>
                 <p className="text-xs text-stone-600 mt-0.5">
-                  Foto registrada por <strong>{selectedPhoto.photographer}</strong> ({selectedPhoto.grade})
+                  Foto por <strong>{selectedPhoto.photographer}</strong> ({selectedPhoto.grade})
                 </p>
               </div>
 

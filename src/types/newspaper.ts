@@ -1,10 +1,8 @@
 export type ArticleCategory = 
-  | 'Ciência & Tecnologia'
+  | 'Notícias da Escola'
+  | 'Projetos & Aulas'
   | 'Cultura & Artes'
-  | 'Esportes & Grêmio'
-  | 'Opinião & Crônicas'
-  | 'Vida Escolar'
-  | 'Comunicado Oficial';
+  | 'Comunicados';
 
 export interface Article {
   id: string;
@@ -12,21 +10,22 @@ export interface Article {
   subtitle: string;
   category: ArticleCategory;
   authorName: string;
-  authorGrade: string; // e.g. "3º Ano EM A", "Prof. Ricardo", "Grêmio Herdar"
+  authorGrade: string; // e.g. "3º Ano A", "Prof. Thiago"
   authorRole: 'aluno' | 'professor' | 'gremio' | 'direcao';
   date: string;
   timestamp: number;
   readTime: string;
   coverImage: string;
   imageCaption?: string;
-  content: string; // Markdown or paragraph formatted text
+  content: string;
   tags: string[];
   isLeadStory?: boolean;
-  isApproved: boolean; // Teachers can moderate
+  isApproved: boolean;
   isPinned?: boolean;
   likes: number;
   views: number;
   pullQuote?: string;
+  authorId?: string;
 }
 
 export interface SchoolEvent {
@@ -35,7 +34,7 @@ export interface SchoolEvent {
   date: string;
   time: string;
   location: string;
-  category: 'Acadêmico' | 'Esportivo' | 'Cultural' | 'Vestibular & ENEM' | 'Comunidade';
+  category: 'Aulas & Projetos' | 'Festas & Cultura' | 'Esportes' | 'Avisos & Reuniões';
   description: string;
   organizer: string;
   organizerRole: string;

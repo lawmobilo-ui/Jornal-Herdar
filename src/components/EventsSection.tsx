@@ -17,11 +17,10 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
   onToggleJoin,
   onOpenNewEvent,
   onDeleteEvent,
-  teacherAuth,
 }) => {
   const [filterCategory, setFilterCategory] = useState<string>('Todos');
 
-  const categories = ['Todos', 'Acadêmico', 'Esportivo', 'Cultural', 'Vestibular & ENEM', 'Comunidade'];
+  const categories = ['Todos', 'Aulas & Projetos', 'Festas & Cultura', 'Esportes', 'Avisos & Reuniões'];
 
   const filteredEvents = filterCategory === 'Todos'
     ? events
@@ -33,10 +32,10 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
         <div>
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone-500 font-semibold mb-1">
             <Calendar className="w-3.5 h-3.5 text-stone-700" />
-            <span>Mural Oficial de Atividades</span>
+            <span>Calendário da Escola</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-serif-title font-bold text-stone-900">
-            Agenda & Eventos do Instituto Herdar
+            Eventos e Datas Importantes
           </h2>
         </div>
 
@@ -45,11 +44,11 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
           className="px-4 py-2 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Divulgar Atividade</span>
+          <span>Cadastrar Evento</span>
         </button>
       </div>
 
-      {/* Interactive Filter Tabs */}
+      {/* Filtro simples */}
       {events.length > 0 && (
         <div className="flex items-center gap-1 p-1 bg-stone-200/70 border border-stone-300 mb-8 overflow-x-auto">
           {categories.map((cat) => (
@@ -68,21 +67,20 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
         </div>
       )}
 
-      {/* Events Grid or Clean Empty State */}
       {events.length === 0 ? (
         <div className="bg-white border border-stone-200 p-8 sm:p-12 text-center">
           <Calendar className="w-10 h-10 text-stone-400 mx-auto mb-3" />
           <h3 className="font-serif-title text-xl font-semibold text-stone-800 mb-2">
-            Nenhum evento agendado no momento
+            Ainda não há eventos cadastrados
           </h3>
           <p className="text-xs text-stone-500 max-w-md mx-auto mb-6">
-            Alunos e professores podem divulgar palestras, campeonatos esportivos, saraus, simulados e reuniões escolares.
+            Alunos e professores podem cadastrar datas de apresentações, provas, reuniões e eventos da escola.
           </p>
           <button
             onClick={onOpenNewEvent}
             className="px-5 py-2.5 bg-stone-900 text-stone-50 text-xs uppercase tracking-wider font-semibold hover:bg-stone-800 transition-colors cursor-pointer"
           >
-            Cadastrar Novo Evento
+            Cadastrar Primeiro Evento
           </button>
         </div>
       ) : (
@@ -97,13 +95,12 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                 className="bg-white border border-stone-200 p-6 flex flex-col justify-between hover:border-stone-400 transition-colors shadow-xs relative"
               >
                 <div>
-                  {/* Clean unboxed metadata */}
                   <div className="flex items-center justify-between text-xs text-stone-500 mb-3 pb-2 border-b border-stone-100">
                     <span className="font-semibold text-stone-800">{ev.category}</span>
                     <div className="flex items-center gap-2">
                       {ev.isOfficial && (
                         <span className="text-[11px] text-amber-900 bg-amber-50 px-1.5 py-0.5 border border-amber-200 font-medium">
-                          Oficial da Escola
+                          Aviso da Escola
                         </span>
                       )}
                       {onDeleteEvent && (
@@ -141,15 +138,14 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                      <span>Organizado por: <strong>{ev.organizer}</strong> ({ev.organizerRole})</span>
+                      <span>Por: <strong>{ev.organizer}</strong> ({ev.organizerRole})</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Action Button */}
                 <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
                   <span className="text-xs text-stone-500">
-                    <strong className="text-stone-900 tabular-nums">{totalAttending}</strong> confirmações
+                    <strong className="text-stone-900 tabular-nums">{totalAttending}</strong> pessoas vão
                   </span>
 
                   <button
@@ -163,10 +159,10 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     {isJoined ? (
                       <>
                         <Check className="w-3.5 h-3.5" />
-                        <span>Presença Confirmada</span>
+                        <span>Vou Participar</span>
                       </>
                     ) : (
-                      <span>Vou Participar</span>
+                      <span>Confirmar Presença</span>
                     )}
                   </button>
                 </div>

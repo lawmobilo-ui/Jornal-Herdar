@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "Article": {
+      "title": "Article",
+      "description": "An article or school news post written by a student or teacher",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 300 },
+        "subtitle": { "type": "string", "maxLength": 500 },
+        "category": { "type": "string", "maxLength": 100 },
+        "authorName": { "type": "string", "maxLength": 150 },
+        "authorGrade": { "type": "string", "maxLength": 150 },
+        "authorRole": { "type": "string", "maxLength": 50 },
+        "date": { "type": "string", "maxLength": 100 },
+        "timestamp": { "type": "number" },
+        "readTime": { "type": "string", "maxLength": 50 },
+        "coverImage": { "type": "string", "maxLength": 500000 },
+        "imageCaption": { "type": "string", "maxLength": 500 },
+        "pullQuote": { "type": "string", "maxLength": 500 },
+        "content": { "type": "string", "maxLength": 100000 },
+        "tags": { "type": "array" },
+        "isLeadStory": { "type": "boolean" },
+        "isApproved": { "type": "boolean" },
+        "isPinned": { "type": "boolean" },
+        "likes": { "type": "number" },
+        "views": { "type": "number" },
+        "authorId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["title", "category", "authorName", "content", "timestamp"]
+    },
+    "SchoolEvent": {
+      "title": "SchoolEvent",
+      "description": "An activity, tournament, or event on the school calendar",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 300 },
+        "date": { "type": "string", "maxLength": 100 },
+        "time": { "type": "string", "maxLength": 100 },
+        "location": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "organizer": { "type": "string", "maxLength": 150 },
+        "organizerRole": { "type": "string", "maxLength": 100 },
+        "isOfficial": { "type": "boolean" },
+        "attendingCount": { "type": "number" }
+      },
+      "required": ["title", "date", "location"]
+    },
+    "PhotoSubmission": {
+      "title": "PhotoSubmission",
+      "description": "A photo shared by a student or teacher to the school gallery",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 300 },
+        "imageUrl": { "type": "string", "maxLength": 500000 },
+        "photographer": { "type": "string", "maxLength": 150 },
+        "grade": { "type": "string", "maxLength": 100 },
+        "eventTag": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string", "maxLength": 100 },
+        "likes": { "type": "number" }
+      },
+      "required": ["title", "imageUrl"]
+    },
+    "ArticleComment": {
+      "title": "ArticleComment",
+      "description": "A reader comment left on an article",
+      "type": "object",
+      "properties": {
+        "articleId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 150 },
+        "authorGrade": { "type": "string", "maxLength": 150 },
+        "text": { "type": "string", "maxLength": 2000 },
+        "date": { "type": "string", "maxLength": 100 },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["articleId", "authorName", "text"]
+    }
+  },
+  "firestore": {
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "School newspaper articles published for all to read"
+    },
+    "/events/{eventId}": {
+      "schema": "SchoolEvent",
+      "description": "School activities calendar and events"
+    },
+    "/photos/{photoId}": {
+      "schema": "PhotoSubmission",
+      "description": "Gallery of school photos"
+    },
+    "/comments/{commentId}": {
+      "schema": "ArticleComment",
+      "description": "Community comments on articles"
+    }
+  }
+}
